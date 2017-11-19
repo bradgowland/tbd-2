@@ -1,0 +1,16 @@
+{
+  "name": "test-project",
+  "version": "1.0.0",
+  "description": "A project to learn socket.IO",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Ayush Gupta",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.15.2",
+    "normalize-port": "^1.0.0",
+    "socket.io": "^1.7.3"
+  }
+}
