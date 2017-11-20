@@ -21,28 +21,35 @@ for (i = 0; i < rows; i++){
 // page interaction
 $(document).ready(function(){
 	// initial grid and mouse states
-	var tweet = grid(16,32,$(".gridContainer"));
+	var tweet = grid(rows, columns, $(".gridContainer"));
 	var mouseIsClicked = false;
 	var stepEntered = false;
+
+	// get current grid state from server
+	socket.on('connection',function(data){
+		for (var i = 0; i < rows; i++) {
+			for (var j = 0; j < columns; j++) {
+				if (data.grid[i][j] > 0) {
+					$(".row:eq("+i+") .step:eq("+j+")").toggleClass("clicked");
+				}
+			}
+		}
+	});
 
 	// cell click
 	$('.row .step').mousedown(function(){
 		// track mouse state
 		mouseIsClicked = true;
-			
-
-		
-		// toggle style	
-		// $(this).toggleClass("clicked");
 		
 		// toggle corresponding polarity grid cell
 		column = $(this).index();
 		row = $(this).parent().index();
 		theGrid[row][column] =  theGrid[row][column] * -1;
-			
+		
+		// send step coordinates
 		socket.emit('step',{
-		row: row,
-		column: column
+			row: row,
+			column: column
 		});
 	
 	// exit on unclick
@@ -52,20 +59,17 @@ $(document).ready(function(){
 	// subsequent dragged cells
 	}).mouseenter(function(){
 		if(mouseIsClicked){
-			// toggle style
-			// $(this).toggleClass("clicked");
-			
 
 			// toggle corresponding polarity grid cell
 			column = $(this).index();
 			row = $(this).parent().index();
-			theGrid[row][column] *= -1;
+			theGrid[row][column] =  theGrid[row][column] * -1;
 			
+			// send step coordinates
 			socket.emit('step',{
-			row: row,
-			column: column
+				row: row,
+				column: column
 			});
-
 		}
 	});
 
@@ -82,20 +86,15 @@ $(document).ready(function(){
 		console.log("rowCount:   ",rowCount);
 	});
 
-
-
+	// update steps from all users
 	socket.on('stepreturn',function(data){
 		console.log('Somebody clicked');
 		$(".row:eq("+data.row+") .step:eq("+data.column+")").toggleClass("clicked");
 	})
+
 	
 
-
-
-
 });
-
-
 
 // grid creation function for init and new tabs
 function grid(rows, columns, element){
