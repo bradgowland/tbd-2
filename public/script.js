@@ -86,6 +86,20 @@ $(document).ready(function(){
 		console.log("rowCount:   ",rowCount);
 	});
 
+	// clear grid
+	$("#clearGrid").click(function(){
+		socket.emit('clearSend');
+	});
+
+	// update grid on clear
+	socket.on('clearReturn', function(){
+		for (var i = 0; i < rows; i++) {
+			for (var j = 0; j < columns; j++) {
+				$(".row:eq("+i+") .step:eq("+j+")").removeClass("clicked");
+			}
+		}
+	});
+
 	// update steps from all users
 	socket.on('stepreturn',function(data){
 		console.log('Somebody clicked');

@@ -56,6 +56,19 @@ io.on('connection', function(socket){
     io.emit('stepreturn', data);
   });
 
+  // clear grid contents
+  socket.on('clearSend', function(data){
+    // clear master grid state
+    for (var i = 0; i < rows; i++) {
+      for (var j = 0; j < cols; j++) {
+        grid[i][j] = -1;
+      }
+    }
+    
+    // send step to clients
+    io.emit('clearReturn');
+  });  
+
   // additional callbacks here
 
 });

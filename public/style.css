@@ -15,6 +15,19 @@ body {
 
 }
 
+.col-sm {
+    -ms-flex-preferred-size: 0;
+    flex-basis: 0;
+    -ms-flex-positive: 1;
+    flex-grow: 1;
+    max-width: 100%;
+}
+
+.grid{
+    height: inherit;
+    width:95%;  
+}
+
 .gridContainer{
     margin-right: auto;
     margin-left: auto;
@@ -35,9 +48,19 @@ body {
     width:3%;
 }
 
-.grid{
-    height: inherit;
-    width:95%;  
+.newInstrument.clicked{
+    visibility: visible;
+    z-index: 999;
+    color: black;
+    width: 100%;
+    height:100%;
+    margin: 0;
+    background-color:#a3c6ff;
+}
+
+
+.newInstrument{
+    visibility: hidden;
 }
 
 .row {
@@ -48,12 +71,8 @@ body {
     margin: none;
 }
 
-.col-sm {
-    -ms-flex-preferred-size: 0;
-    flex-basis: 0;
-    -ms-flex-positive: 1;
-    flex-grow: 1;
-    max-width: 100%;
+.rowlabel{
+
 }
 
 .step {
@@ -71,45 +90,24 @@ body {
     user-select: none;          /* Likely future */  
 }
 
+.step.clicked{
+    display: inline-block;
+/*  height: 10px;
+    width: 50px;*/
+    border: solid black 1px;
+    opacity: 1;
+    background: black;
+    transition: .4s background;
+    -webkit-user-select: none;  /* Chrome all / Safari all */
+    -moz-user-select: none;     /* Firefox all */
+    -ms-user-select: none;      /* IE 10+ */
+    user-select: none;          /* Likely future */  
+}
+
 .step:hover {
 	background: lightgrey;
 	-webkit-user-select: none;  /* Chrome all / Safari all */
     -moz-user-select: none;     /* Firefox all */
     -ms-user-select: none;      /* IE 10+ */
     user-select: none;          /* Likely future */  
-}
-
-.step.clicked{
-	display: inline-block;
-/*	height: 10px;
-	width: 50px;*/
-	border: solid black 1px;
-	opacity: 1;
-	background: black;
-	transition: .4s background;
-	-webkit-user-select: none;  /* Chrome all / Safari all */
-    -moz-user-select: none;     /* Firefox all */
-    -ms-user-select: none;      /* IE 10+ */
-    user-select: none;          /* Likely future */  
-
-}
-
-.newInstrument{
-    visibility: hidden;
-
-}
-
-.newInstrument.clicked{
-    visibility: visible;
-    z-index: 999;
-    color: black;
-    width: 100%;
-    height:100%;
-    margin: 0;
-    background-color:#a3c6ff;
-}
-
-.rowlabel{
-
-
 }
