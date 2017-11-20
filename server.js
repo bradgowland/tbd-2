@@ -2,9 +2,8 @@ var express = require('express');
 var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
-// var normalizeSocket = require("normalize-port");
-// var port = normalizeSocket(process.env.PORT || "8081");
-var port = 3323;
+var normalizeSocket = require("normalize-port");
+var port = normalizeSocket(process.env.PORT || "8081");
 
 app.use(express.static('public'));
 
