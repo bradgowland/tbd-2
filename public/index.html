@@ -12,41 +12,57 @@
 	</head>
 	<body> 
 		<!-- Outer Container -->
-		<div class="container">	
-			<!-- New Instrument Panel -->
-			<div class="newInstrument">
-		  		Would you like to add another instrument? <br />
-		  		What is the name?
-		  		<input type="text" id="insName"> <br />
-		  		How many notes?
-		  		<input type="number" id ="rowCount"> <br />
-		  		<select>
-		  			<option>Drums</option>
-		  			<option>Monophonic</option>
-		  			<option>Polyphonic</option>
-		  		</select>
-		  		<button class="newInsButton">Let's play!</button>
-		  	</div>	
-			<div class="tab-content">
-				<!-- Nav tabs -->
-				<ul class="nav nav-tabs" role="tablist">
-				  <li class="nav-item">
-				    <a class="nav-link active" data-toggle="tab" href="#tweet" role="tab">tweet</a>
-				  </li>
-				  <li class="nav-item" >
-				    <a class="nav-link" data-toggle="tab" href="#add" role="tab" id="plus">+</a>
-				  </li>
-				</ul>
-				<!-- Tab panes -->
-				<div class="tab-panes">
-				  <div class="tab-pane active" id="tweet" role="tabpanel">
-				  	<div class="gridContainer"></div>
-				  	</div>
+		<div class="container">
+			<div class="topBar">
+				<div class="bold_text">tbd 2</div>
+				<!-- New Instrument Panel -->
+				<div class="newInstrument">
+			  		Would you like to add another instrument? <br />
+			  		What is the name?
+			  		<input type="text" id="insName"> <br />
+			  		How many notes?
+			  		<input type="number" id ="rowCount"> <br />
+			  		<select>
+			  			<option>Drums</option>
+			  			<option>Monophonic</option>
+			  			<option>Polyphonic</option>
+			  		</select>
+			  		<button class="newInsButton">Let's play!</button>
+			  	</div>	
+				<div class="tab-content">
+					<!-- Nav tabs -->
+					<ul class="nav nav-tabs" role="tablist">
+					  <li class="nav-item">
+					    <a class="nav-link active" data-toggle="tab" href="#tweet" role="tab">tweet</a>
+					  </li>
+					  <li class="nav-item" >
+					    <a class="nav-link" data-toggle="tab" href="#add" role="tab" id="plus">+</a>
+					  </li>
+					</ul>
+					<!-- Tab panes -->
+					<div class="tab-panes">
+					  <div class="tab-pane active" id="tweet" role="tabpanel">
+					  	<div class="gridContainer"></div>
+					  	<button type="button" class="btn btn-md btn-default-outline" id="clearGrid">Clear</button>
+					  </div>
+					</div>
 				</div>
+			</div>
+			<div id="chatWidnow">
+			    <div id="title_bar">
+			    	<div><input id="username" type="text" placeholder="enter a username"></input><div id="minMax">-</div></div>
+			    </div>
+		    	<div id="messageBox">
+		    		<ul class="messages"></ul>
+				</div>
+				<div id="message_bar">
+			    	<input id="chatInput" type="text" placeholder="type your message"></input>
+			    	<button type="button" class="btn btn-md btn-default-outline" id="chatSend">send</button>
+			    	<button type="button" class="btn btn-md btn-default-outline" id="chatClear">clear</button>
+			    </div>
 			</div>
 		</div>
 	
 		<script src="script.js"></script>
 	</body>
 </html>
-
