@@ -106,9 +106,63 @@ $(document).ready(function(){
 		$(".row:eq("+data.row+") .step:eq("+data.column+")").toggleClass("clicked");
 	})
 
+	// send a chat msg via click
+	$("#chatSend").click(function(){
+		messageSubmit();
+	});
+
+	// send a chat msg via ENTER
+	$("#chatInput").keypress(function(e){
+		// Listen for enter key
+		if (e.which == 13){
+			// trigger chatSend click
+			$("#chatSend").trigger('click');
+		}
+	});
+
+	// receive msg and update list
+	socket.on('chat to client', function(data){
+	    $('.messages').append($('<li>').html('<i>' + data.username + ": " + '</i>' + data.message));	
+	});
+
+	// clear chat
+	// TODO: ONLY NEEDED UNTIL ROOMS //
+	$("#chatClear").click(function(){
+		socket.emit('chatClearSend');
+	});
+	socket.on('chatClearReturn', function(data){
+	    $('.messages').html('');	
+	});
 	
+	// min/max chat box
+	$("#minMax").click(function(){
+	    if($(this).html() == "-"){
+	        $(this).html("+");
+	    }
+	    else{
+	        $(this).html("-");
+	    }
+	    $("#chatWindow").slideToggle();
+	});
 
 });
+
+// message submit and tag search fn def
+function messageSubmit() {
+	// username
+	var username = $('#username').val();
+	// message
+	var message = $('#chatInput').val()
+		
+	// sent plain chat to server
+	socket.emit('chat to server', 
+	{
+		username: username,
+		message: message,
+	});
+
+    $('#chatInput').val('');
+}
 
 // grid creation function for init and new tabs
 function grid(rows, columns, element){
