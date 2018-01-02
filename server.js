@@ -4,6 +4,7 @@ var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var normalizeSocket = require("normalize-port");
 var port = normalizeSocket(process.env.PORT || "8081");
+var instrumentArray = [];
 
 app.use(express.static('public'));
 
@@ -16,25 +17,25 @@ app.get('/session/:name', function(req, res){
 });
 
 // initial grid state
+var grids = [];
 var grid = [];
 var row = [];
 
 var rows = 16;
 var cols = 32;
 
-for(var i = 0; i < rows; i++){
-  for(var k = 0; k < cols; k++){
-    row.push(-1);
-  }
-  grid.push(row);
-  row = [];
-}
 
 io.on('connection', function(socket){
   // connection console check
   console.log('A user connected');
-	socket.emit('connection', {
-    grid: grid
+	// This should update the instruments when a user connects
+  for(i = 0;i<grids.length;i++){
+    socket.emit('newInstReturn', instrumentArray[i]);
+  }
+
+
+  socket.emit('connection', {
+    grid: grids
   });
 
   // timeout warning console check
@@ -50,10 +51,23 @@ io.on('connection', function(socket){
   // distribute user step changes
   socket.on('step', function(data){
     // track master grid state
-    grid[data.row][data.column] = grid[data.row][data.column] * -1;
+    // console.log(data);
+    grids[data.inst][data.row][data.column] *= -1;
     
     // send step to clients
     io.emit('stepreturn', data);
+  });
+
+  
+  // create new instrument and correstponding grid
+  socket.on('newInst',function(data){
+    io.emit('newInstReturn', data);
+    instrumentArray.push(data)
+    var instGrid = createGrid(data.rowCount,32);
+    grids.push(instGrid)
+    // console.log(grids);
+
+
   });
 
   // clear grid contents
@@ -95,3 +109,17 @@ io.on('connection', function(socket){
 http.listen(port, function(){
   console.log('listening on *:', port);
 });
+
+function createGrid(rows,columns){
+  var newGrid = [];
+  var newRow = []
+  for(var i = 0; i < rows; i++){
+    for(var k = 0; k < cols; k++){
+      newRow.push(-1);
+    }
+    newGrid.push(newRow);
+    newRow = [];
+    
+  }
+  return newGrid;
+}

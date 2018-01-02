@@ -16,37 +16,34 @@
 			<div class="topBar">
 				<div class="bold_text">tbd 2</div>
 				<!-- New Instrument Panel -->
-				<div class="newInstrument">
-			  		Would you like to add another instrument? <br />
-			  		What is the name?
-			  		<input type="text" id="insName"> <br />
-			  		How many notes?
-			  		<input type="number" id ="rowCount"> <br />
-			  		<select>
-			  			<option>Drums</option>
-			  			<option>Monophonic</option>
-			  			<option>Polyphonic</option>
-			  		</select>
-			  		<button class="newInsButton">Let's play!</button>
-			  	</div>	
-				<div class="tab-content">
-					<!-- Nav tabs -->
-					<ul class="nav nav-tabs" role="tablist">
-					  <li class="nav-item">
-					    <a class="nav-link active" data-toggle="tab" href="#tweet" role="tab">tweet</a>
-					  </li>
-					  <li class="nav-item" >
-					    <a class="nav-link" data-toggle="tab" href="#add" role="tab" id="plus">+</a>
-					  </li>
-					</ul>
-					<!-- Tab panes -->
-					<div class="tab-panes">
-					  <div class="tab-pane active" id="tweet" role="tabpanel">
-					  	<div class="gridContainer"></div>
-					  	<button type="button" class="btn btn-md btn-default-outline" id="clearGrid">Clear</button>
-					  </div>
-					</div>
-				</div>
+				<div id="tab-spot">
+				<!-- Nav tabs -->
+				<ul class="tabs">
+				  <li><a class="tab-link current" data-tab="plus">+</a></li>
+				  <!-- <li><a class="tab-link" data-tab="tweet">tweet</a></li> -->
+				</ul>
+				
+				<!-- Tab panes -->
+	
+
+				  
+			<div class="tab-content current" id="plus">
+				  	<div class="newInstrument">
+				  		Would you like to add another instrument? <br />
+				  		What is the name?
+				  		<input type="text" id="insName"> <br />
+				  		How many notes?
+				  		<input type="number" id ="rowCount"> <br />
+				  		<select>
+				  			<option>Drums</option>
+				  			<option>Monophonic</option>
+				  			<option>Polyphonic</option>
+				  		</select>
+				  		<button class="newInsButton">Let's play!</button>
+		  	 		</div>	
+			</div>
+
+			</div>
 			</div>
 			<div id="chatWidnow">
 			    <div id="title_bar">
