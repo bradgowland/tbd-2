@@ -71,17 +71,41 @@ io.on('connection', function(socket){
   });
 
   // clear grid contents
-  socket.on('clearSend', function(data){
-    // clear master grid state
-    for (var i = 0; i < rows; i++) {
+  socket.on('clearcurrent', function(data){
+    // clear current grid state
+    var currentGrid = grids[data.inst]
+    for (var i = 0; i < currentGrid.length; i++) {
       for (var j = 0; j < cols; j++) {
-        grid[i][j] = -1;
+        grids[data.inst][i][j] = -1;
       }
     }
     
-    // send step to clients
-    io.emit('clearReturn');
+    // send clear messagw to clients
+    io.emit('clearcurrentreturn',{
+      inst: data.inst,
+      grids: grids
+    });
   });  
+
+  socket.on('clearall', function(){
+    // clear current grid state
+    console.log('Clear all')
+    for(var h = 0; h < grids.length; h++){
+      var currentGrid = grids[h];
+      for (var i = 0; i < currentGrid.length; i++) {
+        for (var j = 0; j < cols; j++) {
+          grids[h][i][j] = -1;
+        }
+      }
+    }
+    
+    // send clear messagw to clients
+    io.emit('clearallreturn',{grids: grids});
+  }); 
+
+  socket.on('tempo', function(data){
+    io.emit('temporeturn', data);
+  }) 
 
   // clear grid contents
   socket.on('chatClearSend', function(data){

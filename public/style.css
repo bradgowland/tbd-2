@@ -19,6 +19,10 @@ body {
     text-shadow: 3px 2px black;
 }
 
+#tempo{
+    width: 45px;
+}
+
 #chatClear {
     background: lightgrey;
     height: inherit;
@@ -133,6 +137,10 @@ body {
     -moz-user-select: none;     /* Firefox all */
     -ms-user-select: none;      /* IE 10+ */
     user-select: none;          /* Likely future */  
+}
+
+.step.current{
+   border: solid red 1px; 
 }
 
 .step:hover {

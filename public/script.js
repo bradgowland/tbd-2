@@ -4,24 +4,20 @@ var socket = io();
 // initialize values
 var noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 var row, column;
-var theGrid = [];
 var thisRow;
-var rows = 16;
+
 var columns = 32; 
 var lastCellLeft; 
 var twoCellsBack;
 var currentGridIndex = 0;
 var numInsts = 0;	
-var grids;
+var grids = [];
+var counter;
+var tempo;
+var allRows;
+ //this is frequency whereas p5 was the duration of the tick	
 
-// create polarity grid
-for (i = 0; i < rows; i++){
-	thisRow = [];
-	for (j = 0; j < columns; j++){
-		thisRow.push(-1);
-	}	
-	theGrid.push(thisRow);
-}
+
 
 // page interaction
 $(document).ready(function(){
@@ -39,7 +35,7 @@ $(document).ready(function(){
 		// toggle corresponding polarity grid cell
 		column = $(this).index();
 		row = $(this).parent().index();
-		theGrid[row][column] =  theGrid[row][column] * -1;
+		grids[currentGridIndex][row][column] *= -1;
 		
 		// send step coordinates
 		socket.emit('step',{
@@ -88,7 +84,7 @@ $(document).ready(function(){
 			column = $(this).index();
 			row = $(this).parent().index();
 			// console.log('You entered:  ',column,row)
-			theGrid[row][column] =  theGrid[row][column] * -1;
+			grids[currentGridIndex][row][column] *= -1;
 			
 			// send step coordinates
 			socket.emit('step',{
@@ -176,29 +172,58 @@ $(document).ready(function(){
 		currentGridIndex = numInsts;
 		numInsts++;
 		console.log('from new inst:  ', currentGridIndex);
+		
+
 	});
 
 	// clear grid
-	$("#clearGrid").click(function(){
-		socket.emit('clearSend');
+	$("#clearcurrent").click(function(){
+		socket.emit('clearcurrent',{inst: currentGridIndex});
 	});
 
+	$("#clearall").click(function(){
+		socket.emit('clearall')
+	})
+
 	// update grid on clear
-	socket.on('clearReturn', function(){
-		for (var i = 0; i < rows; i++) {
-			for (var j = 0; j < columns; j++) {
-				$(".row:eq("+i+") .step:eq("+j+")").removeClass("clicked");
-			}
-		}
+	socket.on('clearcurrentreturn', function(data){
+			$(".gridContainer:eq("+data.inst+")").find(".clicked").removeClass("clicked");
+			grids = data.grids;
 	});
+
+	socket.on('clearallreturn', function(data){
+			$(".gridContainer").find(".clicked").removeClass("clicked");
+			console.log("Clear all");
+			grids = data.grids;
+	});
+
+	$('#tempo').change(function(){
+		tempo = $(this).val()/60;
+		socket.emit('tempo',{tempo: tempo});
+	});
+
+	socket.on('temporeturn',function(data){
+		clock.frequency.value = data.tempo;
+		$('#tempo').val(data.tempo*60);
+	});
+
+	$('#startstop').click(function(){
+		$(this).toggleClass('started');
+		if($(this).hasClass('started')){
+			$(this).text('STOP');
+			clock.start();
+		}else{
+			$(this).text('Start');
+			clock.stop();
+		}
+	})
+
+
 
 	
 
 	// update steps from all users
 	socket.on('stepreturn',function(data){	
-		// console.log('Somebody clicked');
-		theInsts = $('.gridContainer');
-
 		$(".gridContainer:eq("+data.inst+") .row:eq("+data.row+") .step:eq("+data.column+")").toggleClass("clicked");
 		console.log('row:  ', data.row, 'column:  ', data.column);
 	})
@@ -216,6 +241,8 @@ $(document).ready(function(){
 			$("#chatSend").trigger('click');
 		}
 	});
+
+
 
 	// receive msg and update list
 	socket.on('chat to client', function(data){
@@ -243,6 +270,13 @@ $(document).ready(function(){
 	});
 
 });
+
+clock = new Tone.Clock(function(){
+	counter = this.ticks%columns;
+	$('.step').removeClass('current');
+	allRows = $('.step:eq('+counter+')', '.row').toggleClass('current');
+
+}, 2);
 
 // message submit and tag search fn def
 function messageSubmit() {
@@ -304,14 +338,23 @@ function grid(rows, columns, element){
 	});
 
 	// Create the polarity grid for click/unclick
-	for (i = 0; i < rows; i++){
- 		thisRow = [];
-		for (j = 0; j < columns; j++){
-			thisRow.push(-1);
-		}
-		theGrid.push(thisRow);
-	}
+	grids.push(createGrid(rows,columns))
 
 	// return completed grid
 	return gr;
 }
+
+function createGrid(rows,columns){
+  var newGrid = [];
+  var newRow = []
+  for(var i = 0; i < rows; i++){
+    for(var k = 0; k < columns; k++){
+      newRow.push(-1);
+    }
+    newGrid.push(newRow);
+    newRow = [];
+    
+  }
+  return newGrid;
+}
+
