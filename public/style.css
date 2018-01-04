@@ -19,9 +19,6 @@ body {
     text-shadow: 3px 2px black;
 }
 
-#tempo{
-    width: 45px;
-}
 
 #chatClear {
     background: lightgrey;
@@ -67,16 +64,17 @@ body {
 
 .grid{
     height: inherit;
-    width:95%;  
+    width:100%;  
 }
 
 .gridContainer{
     margin-right: auto;
     margin-left: auto;
     /*padding-top: 15px;*/
-    padding-right: 15px;
+    padding-right: 0px;
     padding-left: 15px;
     height:400px;
+    background-color: aqua;
 }
 
 .grid.hidden{
@@ -88,6 +86,7 @@ body {
     justify-content: left;
     height:inherit;
     width:3%;
+    overflow:auto;
 }
 
 .messages {
@@ -107,6 +106,9 @@ body {
 }
 
 .rowlabel{
+    font-weight:900;
+    font-style:italic;
+
 
 }
 
@@ -140,7 +142,7 @@ body {
 }
 
 .step.current{
-   border: solid red 1px; 
+   border: solid hotpink 4px; 
 }
 
 .step:hover {
@@ -194,6 +196,20 @@ body {
     overflow: auto;
 }
 
+.buttonbar{
+    width: 18.8%;
+    height: inherit;
+    border: none;
+    font-size: 18px;
+    background-color: grey;
+    color: white;
+    padding:0;
+    border:none; 
+    vertical-align: middle;   
+}
+
+
+
 
 ul.tabs{
 margin: 0px;
@@ -222,4 +238,16 @@ ul.tabs li.current{
 .tab-content.current{
     display: inherit;
     padding: 0px;
+}
+
+.midbar{
+    text-align: center;
+    height:80px;
+    margin:10px;
+
+}
+
+#startstop.started{
+    background-color:red;
+
 }

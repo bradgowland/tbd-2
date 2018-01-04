@@ -12,12 +12,26 @@ var twoCellsBack;
 var currentGridIndex = 0;
 var numInsts = 0;	
 var grids = [];
-var counter;
+var counter = 0;
 var tempo;
 var allRows;
  //this is frequency whereas p5 was the duration of the tick	
 
+//enable WebMIDI
+WebMidi.enable(function(err){
+	if(err){
+		alert("Uh oh! Looks like WebMidi failed. Some browsers don't support WebMIDI, try Firefox or Chrome!!");
+	}
 
+	//List the outputs
+	for(var i = 0; i < WebMidi.outputs.length;i++){
+		$('#output').append("<option>"+WebMidi.outputs[i].name+"</option>")
+	}
+
+
+
+
+})
 
 // page interaction
 $(document).ready(function(){
@@ -211,10 +225,13 @@ $(document).ready(function(){
 		$(this).toggleClass('started');
 		if($(this).hasClass('started')){
 			$(this).text('STOP');
+			counter = 0;
 			clock.start();
 		}else{
 			$(this).text('Start');
 			clock.stop();
+			$('.step').removeClass('current');
+
 		}
 	})
 
@@ -269,13 +286,18 @@ $(document).ready(function(){
 	    $("#chatWindow").slideToggle();
 	});
 
+	$('#output').change(function(){
+		// $(this).
+	})
+
 });
 
 clock = new Tone.Clock(function(){
-	counter = this.ticks%columns;
+	
 	$('.step').removeClass('current');
+	counter = this.ticks%columns;
 	allRows = $('.step:eq('+counter+')', '.row').toggleClass('current');
-
+	
 }, 2);
 
 // message submit and tag search fn def
@@ -296,6 +318,14 @@ function messageSubmit() {
 }
 
 // grid creation function for init and new tabs
+
+
+
+
+
+
+
+
 function grid(rows, columns, element){
 	// initial values
 	var w = 100/columns;
