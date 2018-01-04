@@ -224,7 +224,7 @@ ul.tabs li{
     cursor: pointer;
 }
 
-ul.tabs li.current{
+ul.tabs li.selected{
     background: #ededed;
     color: #222;
 }
@@ -235,7 +235,7 @@ ul.tabs li.current{
     padding: 15px;
 }
 
-.tab-content.current{
+.tab-content.selected{
     display: inherit;
     padding: 0px;
 }

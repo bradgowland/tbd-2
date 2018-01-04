@@ -41,7 +41,7 @@ $(document).ready(function(){
 	var stepEntered = false;
 
 	// cell click
-	$(document).on("mousedown",'.current .row .step',function(){
+	$(document).on("mousedown",'.selected .row .step',function(){
 		// track mouse state
 		mouseIsClicked = true;
 		console.log("You're clicking");
@@ -63,7 +63,7 @@ $(document).ready(function(){
 		mouseIsClicked = false;
 	
 	// subsequent dragged cells
-	}).on("mouseleave",'.row .step',function(){
+	}).on("mouseleave",'.selected .row .step',function(){
 			// toggle corresponding polarity grid cell
 			if(mouseIsClicked){
 			if(lastCellLeft){
@@ -86,7 +86,7 @@ $(document).ready(function(){
 			// 	row: row,
 			//  	column: column
 		 // // });
-		}).on("mouseenter", '.row .step',function(){
+		}).on("mouseenter", '.selected .row .step',function(){
 		if(mouseIsClicked){
 
 			// toggle corresponding polarity grid cell
@@ -114,11 +114,11 @@ $(document).ready(function(){
 	$(document).on("click","ul.tabs li a",function(){	
 		var tab_id = $(this).attr('data-tab');
 		console.log(tab_id);
-		$('ul.tabs li a').removeClass('current');
-		$('.tab-content').removeClass('current');
+		$('ul.tabs li a').removeClass('selected');
+		$('.tab-content').removeClass('selected');
 		currentGridIndex = $("ul.tabs li a").index(this)-1;
-		$(this).addClass('current');
-		$("#"+tab_id).addClass('current');
+		$(this).addClass('selected');
+		$("#"+tab_id).addClass('selected');
 		
 		console.log(currentGridIndex);
 	});
@@ -162,15 +162,15 @@ $(document).ready(function(){
 
 	socket.on('newInstReturn',function(data){
 		console.log('rowCount:  ',data.rowCount,'name:  ', data.name);
-		$('ul.tabs li a').removeClass('current');
-		$('.tab-content').removeClass('current');
+		$('ul.tabs li a').removeClass('selected');
+		$('.tab-content').removeClass('selected');
 		
 		//Create Tab
-		var newTab = '<li><a class="tab-link current" data-tab="'+data.name+'">'+data.name+'</a></li>';
+		var newTab = '<li><a class="tab-link selected" data-tab="'+data.name+'">'+data.name+'</a></li>';
 		$('.tabs').append(newTab);
 
 		//Creating The New Grid
-		var newPane = $('<div class="tab-content current" id="'+data.name+'"></div>');
+		var newPane = $('<div class="tab-content selected" id="'+data.name+'"></div>');
 		
 		var gc = $('<div class="gridContainer"></div>').appendTo(newPane);
 		// 	console.log(gc);
