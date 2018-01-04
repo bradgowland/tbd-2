@@ -118,7 +118,8 @@ $(document).ready(function(){
 		$('.tab-content').removeClass('selected');
 		currentGridIndex = $("ul.tabs li a").index(this)-1;
 		$(this).addClass('selected');
-		$("#"+tab_id).addClass('selected');
+		console.log(tab_id);
+		$("#"+tab_id+"").addClass('selected');
 		
 		console.log(currentGridIndex);
 	});
