@@ -118,10 +118,11 @@ $(document).ready(function(){
 		$('.tab-content').removeClass('selected');
 		currentGridIndex = $("ul.tabs li a").index(this)-1;
 		$(this).addClass('selected');
-		console.log(tab_id);
 		$("#"+tab_id+"").addClass('selected');
-		
-		console.log(currentGridIndex);
+		if(!$('.tab-content').hasClass('selected')){
+		var ix = $('.tab-link').index(this);
+		$('.tab-content:eq('+ix+')').addClass('selected')
+		}
 	});
 
 	// get current grid state from server
