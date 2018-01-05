@@ -14,7 +14,10 @@ var numInsts = 0;
 var grids = [];
 var counter = 0;
 var tempo;
+var ix;
 var allRows;
+var selectedOutput;
+var outputArray = [];
  //this is frequency whereas p5 was the duration of the tick	
 
 //enable WebMIDI
@@ -27,6 +30,13 @@ WebMidi.enable(function(err){
 	for(var i = 0; i < WebMidi.outputs.length;i++){
 		$('#output').append("<option>"+WebMidi.outputs[i].name+"</option>")
 	}
+
+	$('#output').change(function(){
+		selectedOutput = $('option:selected', this).index()-1;
+		console.log(WebMidi.outputs[selectedOutput].name);
+
+
+	})
 
 
 
@@ -41,10 +51,16 @@ $(document).ready(function(){
 	var stepEntered = false;
 
 	// cell click
+	$(document).on("mouseleave",'.selected .grid',function(){
+		mouseIsClicked = false;
+	})
+
+
+
 	$(document).on("mousedown",'.selected .row .step',function(){
 		// track mouse state
 		mouseIsClicked = true;
-		console.log("You're clicking");
+		// console.log("You're clicking");
 		
 		// toggle corresponding polarity grid cell
 		column = $(this).index();
@@ -75,7 +91,7 @@ $(document).ready(function(){
 
 			column = $(this).index();
 			row = $(this).parent().index();
-			console.log('You left:  ', column, row);
+			// console.log('You left:  ', column, row);
 			$(".lastcell").removeClass("lastcell");
 			lastCellLeft=$(this).toggleClass("lastcell");
 			}
@@ -113,14 +129,14 @@ $(document).ready(function(){
 	
 	$(document).on("click","ul.tabs li a",function(){	
 		var tab_id = $(this).attr('data-tab');
-		console.log(tab_id);
+		// console.log(tab_id);
 		$('ul.tabs li a').removeClass('selected');
 		$('.tab-content').removeClass('selected');
 		currentGridIndex = $("ul.tabs li a").index(this)-1;
 		$(this).addClass('selected');
 		$("#"+tab_id+"").addClass('selected');
 		if(!$('.tab-content').hasClass('selected')){
-		var ix = $('.tab-link').index(this);
+		ix = $('.tab-link').index(this);
 		$('.tab-content:eq('+ix+')').addClass('selected')
 		}
 	});
@@ -163,12 +179,12 @@ $(document).ready(function(){
 	});
 
 	socket.on('newInstReturn',function(data){
-		console.log('rowCount:  ',data.rowCount,'name:  ', data.name);
+		// console.log('rowCount:  ',data.rowCount,'name:  ', data.name);
 		$('ul.tabs li a').removeClass('selected');
 		$('.tab-content').removeClass('selected');
 		
 		//Create Tab
-		var newTab = '<li><a class="tab-link selected" data-tab="'+data.name+'">'+data.name+'</a></li>';
+		var newTab = '<li><a class="tab-link selected" data-tab="'+data.name+'">'+data.name+'  <input type="image" class="deletetab" src="littlex.png"></input></a></li>';
 		$('.tabs').append(newTab);
 
 		//Creating The New Grid
@@ -187,7 +203,7 @@ $(document).ready(function(){
 		newPane.appendTo($('#tab-spot'));
 		currentGridIndex = numInsts;
 		numInsts++;
-		console.log('from new inst:  ', currentGridIndex);
+		// console.log('from new inst:  ', currentGridIndex);
 		
 
 	});
@@ -244,7 +260,7 @@ $(document).ready(function(){
 	// update steps from all users
 	socket.on('stepreturn',function(data){	
 		$(".gridContainer:eq("+data.inst+") .row:eq("+data.row+") .step:eq("+data.column+")").toggleClass("clicked");
-		console.log('row:  ', data.row, 'column:  ', data.column);
+		// console.log('row:  ', data.row, 'column:  ', data.column);
 	})
 
 	// send a chat msg via click
@@ -292,6 +308,25 @@ $(document).ready(function(){
 		// $(this).
 	})
 
+	$(document).on('click','.deletetab',function(){
+		var tab_to_delete = $('.deletetab').index(this);
+		socket.emit('deletetab',{tab2delete: tab_to_delete});
+	});
+
+	socket.on('deletereturn',function(data){
+		
+		ix = data.tab2delete+1;
+		
+		$('.tab-link:eq('+ix+')').parent().remove();
+		$('.tab-content:eq('+ix+')').remove();
+		
+		grids.splice(ix,1);
+
+		ix-=1;
+		$('.tab-link:eq('+ix+')').addClass('selected');
+		$('.tab-content:eq('+ix+')').addClass('selected');
+	})
+
 });
 
 clock = new Tone.Clock(function(){
@@ -334,10 +369,7 @@ function grid(rows, columns, element){
 	var h = 100/rows;
 	var labels = $("<div class='gridlabels'></div>")
 	
-	// console checks for grid dimensions
-	console.log("height: " , element.height());
-	console.log("width: ", element.width());
-
+	
 	// create the column of labels
 	for(var i = 0; i < rows; i++){
 		thisNote = noteNames[i%noteNames.length];

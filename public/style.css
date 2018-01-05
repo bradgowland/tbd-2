@@ -208,6 +208,16 @@ body {
     vertical-align: middle;   
 }
 
+.tab-link.selected{
+    background-color: hotpink;
+    border-radius: 25%;
+    padding: 8px;
+}
+
+.deletetab{
+    height:10px;
+}
+
 
 
 

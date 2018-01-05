@@ -70,6 +70,15 @@ io.on('connection', function(socket){
 
   });
 
+  // delete instrument
+  socket.on('deletetab',function(data){
+    instrumentArray.splice(data.tab2delete,1);
+    grids.splice(data.tab2delete,1);
+    console.log('Delete the ',data.tab2delete);
+    io.emit('deletereturn',data);
+
+  })
+
   // clear grid contents
   socket.on('clearcurrent', function(data){
     // clear current grid state
