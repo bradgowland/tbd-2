@@ -6,6 +6,7 @@ var normalizeSocket = require("normalize-port");
 var port = normalizeSocket(process.env.PORT || "8081");
 var instrumentArray = [];
 
+
 app.use(express.static('public'));
 
 app.get('/', function(req, res){
@@ -28,6 +29,7 @@ var cols = 32;
 io.on('connection', function(socket){
   // connection console check
   console.log('A user connected');
+  
 	// This should update the instruments when a user connects
   for(i = 0;i<grids.length;i++){
     socket.emit('newInstReturn', instrumentArray[i]);

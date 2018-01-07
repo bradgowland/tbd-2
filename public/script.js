@@ -3,6 +3,11 @@ var socket = io();
 
 // initialize values
 var noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+var noteNumbers = [];
+for(var x = 0; x<noteNames.length;x++){
+	noteNumbers.push(x);
+}
+var rootNote = 40;
 var row, column;
 var thisRow;
 
@@ -18,7 +23,13 @@ var ix;
 var allRows;
 var selectedOutput;
 var outputArray = [];
- //this is frequency whereas p5 was the duration of the tick	
+var instrumentOutputs = [];
+var currentNotes = [];
+var currentGrid;
+var blankCurNotes = [];
+
+var searchIx;
+
 
 //enable WebMIDI
 WebMidi.enable(function(err){
@@ -33,9 +44,13 @@ WebMidi.enable(function(err){
 
 	$('#output').change(function(){
 		selectedOutput = $('option:selected', this).index()-1;
-		console.log(WebMidi.outputs[selectedOutput].name);
+		if(selectedOutput < 0){
+		instrumentOutputs[currentGridIndex] = 0;
+		}else{
+		instrumentOutputs[currentGridIndex] = WebMidi.outputs[selectedOutput];
+		}
 
-
+		console.log(instrumentOutputs);
 	})
 
 
@@ -65,7 +80,7 @@ $(document).ready(function(){
 		// toggle corresponding polarity grid cell
 		column = $(this).index();
 		row = $(this).parent().index();
-		grids[currentGridIndex][row][column] *= -1;
+		
 		
 		// send step coordinates
 		socket.emit('step',{
@@ -114,7 +129,7 @@ $(document).ready(function(){
 			column = $(this).index();
 			row = $(this).parent().index();
 			// console.log('You entered:  ',column,row)
-			grids[currentGridIndex][row][column] *= -1;
+			
 			
 			// send step coordinates
 			socket.emit('step',{
@@ -138,7 +153,14 @@ $(document).ready(function(){
 		if(!$('.tab-content').hasClass('selected')){
 		ix = $('.tab-link').index(this);
 		$('.tab-content:eq('+ix+')').addClass('selected')
+		
 		}
+		if(instrumentOutputs[currentGridIndex]){
+			$('#output').val(instrumentOutputs[currentGridIndex].name);
+		}else{
+			$('#output').val('Pick yr MIDI out!');
+		}
+		
 	});
 
 	// get current grid state from server
@@ -152,6 +174,7 @@ $(document).ready(function(){
 				for (var j = 0; j < columns; j++) {
 					if (grids[h][i][j] > 0) {
 						$(".gridContainer:eq("+h+") .row:eq("+i+") .step:eq("+j+")").toggleClass("clicked");
+						currentNotes[h][j].push(i+rootNote);
 					}
 				}
 			}
@@ -195,7 +218,7 @@ $(document).ready(function(){
 		var thisElement = $('.tab-content.current .gridContainer');
 		
 
-		var newGrid = grid(data.rowCount,32,gc);
+		var newGrid = grid(data.rowCount,columns,gc);
 		
 		// console.log('the new grid:   ',newGrid);
 
@@ -220,6 +243,10 @@ $(document).ready(function(){
 	// update grid on clear
 	socket.on('clearcurrentreturn', function(data){
 			$(".gridContainer:eq("+data.inst+")").find(".clicked").removeClass("clicked");
+			currentNotes[data.inst] = [];
+			for (var y = 0;y<columns;y++){
+			currentNotes[data.inst].push([]);	
+			}
 			grids = data.grids;
 	});
 
@@ -227,6 +254,12 @@ $(document).ready(function(){
 			$(".gridContainer").find(".clicked").removeClass("clicked");
 			console.log("Clear all");
 			grids = data.grids;
+			for(i=0;i<currentNotes.length;i++){
+				currentNotes[i] = [];
+				for (var y = 0;y<columns;y++){
+				currentNotes[i].push([]);	
+				}
+			}
 	});
 
 	$('#tempo').change(function(){
@@ -260,6 +293,15 @@ $(document).ready(function(){
 	// update steps from all users
 	socket.on('stepreturn',function(data){	
 		$(".gridContainer:eq("+data.inst+") .row:eq("+data.row+") .step:eq("+data.column+")").toggleClass("clicked");
+		grids[data.inst][data.row][data.column] *= -1;
+		console.log(data.inst);
+		
+		if(grids[data.inst][data.row][data.column]>0){
+		currentNotes[data.inst][data.column].push(data.row + rootNote);
+		}else{
+		searchIx = currentNotes[data.inst][data.column].indexOf(data.row + rootNote);
+		currentNotes[data.inst][data.column].splice(searchIx,1);
+		}
 		// console.log('row:  ', data.row, 'column:  ', data.column);
 	})
 
@@ -320,9 +362,12 @@ $(document).ready(function(){
 		$('.tab-link:eq('+ix+')').parent().remove();
 		$('.tab-content:eq('+ix+')').remove();
 		
-		grids.splice(ix,1);
-
 		ix-=1;
+		console.log(ix);
+		grids.splice(ix,1);
+		currentNotes.splice(ix,1);
+
+		
 		$('.tab-link:eq('+ix+')').addClass('selected');
 		$('.tab-content:eq('+ix+')').addClass('selected');
 	})
@@ -334,7 +379,14 @@ clock = new Tone.Clock(function(){
 	$('.step').removeClass('current');
 	counter = this.ticks%columns;
 	allRows = $('.step:eq('+counter+')', '.row').toggleClass('current');
-	
+
+	for(i=0;i<instrumentOutputs.length;i++){
+		if(instrumentOutputs[i]){
+			instrumentOutputs[i].playNote(currentNotes[i][counter],1);
+			instrumentOutputs[i].stopNote(currentNotes[i][counter],1,{time: '+500'});
+		}
+	}
+		// console.log(currentNotes);
 }, 2);
 
 // message submit and tag search fn def
@@ -403,6 +455,13 @@ function grid(rows, columns, element){
 
 	// Create the polarity grid for click/unclick
 	grids.push(createGrid(rows,columns))
+	instrumentOutputs.push(0);
+	for (var y = 0;y<columns;y++){
+		blankCurNotes.push([]);	
+	}
+	currentNotes.push(blankCurNotes);
+	blankCurNotes = [];
+	
 
 	// return completed grid
 	return gr;

@@ -64,7 +64,8 @@ body {
 
 .grid{
     height: inherit;
-    width:100%;  
+    width:100%;
+    cursor: pointer;  
 }
 
 .gridContainer{
@@ -142,7 +143,12 @@ body {
 }
 
 .step.current{
-   border: solid hotpink 4px; 
+   /*border: solid hotpink 4px; */
+   background-color: red;
+}
+
+.step.clicked.current{
+    background-color: black;
 }
 
 .step:hover {
@@ -216,6 +222,10 @@ body {
 
 .deletetab{
     height:10px;
+}
+
+li{
+    padding:0px;
 }
 
 
