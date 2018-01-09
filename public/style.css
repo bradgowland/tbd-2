@@ -65,7 +65,35 @@ body {
 .grid{
     height: inherit;
     width:100%;
-    cursor: pointer;  
+    cursor: pointer; 
+    
+}
+
+
+
+.newInstrument{
+    display: block;
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: red; /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    text-align: center;
+    vertical-align: middle;
+    
+}
+
+.instPane{
+    display: inline-block;
+    width:300px;
+    height:100px;
+    background-color: white;
+    margin-left: center;
+    margin-top: 20%;
 }
 
 .gridContainer{
@@ -73,9 +101,9 @@ body {
     margin-left: auto;
     /*padding-top: 15px;*/
     padding-right: 0px;
-    padding-left: 15px;
+    padding-left: 0px;
     height:400px;
-    background-color: aqua;
+    
 }
 
 .grid.hidden{
@@ -86,8 +114,20 @@ body {
     float: left;
     justify-content: left;
     height:inherit;
-    width:3%;
-    overflow:auto;
+    /*width:3%;*/
+    
+    border-right: solid black 1px;
+    font-size:unset;
+    color:white;
+    padding-right: 1px;
+    padding-left: 1px;
+    background-color:black;
+    border-left: solid 1px white;
+    border-right:solid 1px white;
+    border-bottom: solid 1px white;
+    text-align: center;
+    line-height: 100%;
+
 }
 
 .messages {
@@ -107,10 +147,10 @@ body {
 }
 
 .rowlabel{
-    font-weight:900;
+    font-weight:700;
     font-style:italic;
-
-
+    border-top: solid 1px white;
+    font-size:100%;
 }
 
 .step {
@@ -119,7 +159,8 @@ body {
     float: left;
 	height: 100%;
 	/*width: 60px;*/
-	border: solid black 1px;
+	border-bottom: solid black 1px;
+    border-right: solid black 1px;
 	opacity: 1;
 	background: white;
 	-webkit-user-select: none;  /* Chrome all / Safari all */
@@ -152,7 +193,7 @@ body {
 }
 
 .step:hover {
-	background: lightgrey;
+	background: darkgrey;
 	-webkit-user-select: none;  /* Chrome all / Safari all */
     -moz-user-select: none;     /* Firefox all */
     -ms-user-select: none;      /* IE 10+ */
@@ -240,7 +281,7 @@ ul.tabs li{
     background: none;
     color: #222;
     display: inline-block;
-    padding: 10px 15px;
+    padding: 5px 5px;
     cursor: pointer;
 }
 

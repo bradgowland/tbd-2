@@ -22,8 +22,8 @@ var grids = [];
 var grid = [];
 var row = [];
 
-var rows = 16;
-var cols = 32;
+
+var cols = 64;
 
 
 io.on('connection', function(socket){
@@ -53,7 +53,8 @@ io.on('connection', function(socket){
   // distribute user step changes
   socket.on('step', function(data){
     // track master grid state
-    // console.log(data);
+    console.log('data:  ', data);
+    console.log(grids);
     grids[data.inst][data.row][data.column] *= -1;
     
     // send step to clients

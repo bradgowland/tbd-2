@@ -2,33 +2,22 @@
 var socket = io();
 
 // initialize values
-var noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-var noteNumbers = [];
-for(var x = 0; x<noteNames.length;x++){
-	noteNumbers.push(x);
-}
+
+
 var rootNote = 40;
 var row, column;
-var thisRow;
-
 var columns = 32; 
-var lastCellLeft; 
-var twoCellsBack;
-var currentGridIndex = 0;
-var numInsts = 0;	
-var grids = [];
+var lastCellLeft,twoCellsBack; 
+
+var currentGridIndex = 0;	
 var counter = 0;
 var tempo;
 var ix;
 var allRows;
 var selectedOutput;
-var outputArray = [];
-var instrumentOutputs = [];
-var currentNotes = [];
-var currentGrid;
-var blankCurNotes = [];
-
+var instruments = [];
 var searchIx;
+var type;
 
 
 //enable WebMIDI
@@ -36,21 +25,20 @@ WebMidi.enable(function(err){
 	if(err){
 		alert("Uh oh! Looks like WebMidi failed. Some browsers don't support WebMIDI, try Firefox or Chrome!!");
 	}
-
 	//List the outputs
 	for(var i = 0; i < WebMidi.outputs.length;i++){
 		$('#output').append("<option>"+WebMidi.outputs[i].name+"</option>")
 	}
 
+	// Sets instrument MIDI outs
 	$('#output').change(function(){
 		selectedOutput = $('option:selected', this).index()-1;
 		if(selectedOutput < 0){
-		instrumentOutputs[currentGridIndex] = 0;
+		instruments[currentGridIndex].out = 0;
 		}else{
-		instrumentOutputs[currentGridIndex] = WebMidi.outputs[selectedOutput];
+		instruments[currentGridIndex].out = WebMidi.outputs[selectedOutput];
 		}
-
-		console.log(instrumentOutputs);
+		console.log(instruments.out);
 	})
 
 
@@ -60,6 +48,18 @@ WebMidi.enable(function(err){
 
 // page interaction
 $(document).ready(function(){
+
+	// get current grid state from server
+	socket.on('connection',function(data){
+	if(data.grid){
+		for (var h = 0; h < data.grid.length;h++){
+			var thisGrid = data.grid[h];
+			instruments[h].connection(thisGrid,h);
+		}
+	}
+	});
+	
+
 	// initial grid and mouse states
 	// var tweet = grid(rows, columns, $(".gridContainer"));
 	var mouseIsClicked = false;
@@ -69,18 +69,13 @@ $(document).ready(function(){
 	$(document).on("mouseleave",'.selected .grid',function(){
 		mouseIsClicked = false;
 	})
-
-
-
 	$(document).on("mousedown",'.selected .row .step',function(){
 		// track mouse state
 		mouseIsClicked = true;
-		// console.log("You're clicking");
 		
 		// toggle corresponding polarity grid cell
 		column = $(this).index();
 		row = $(this).parent().index();
-		
 		
 		// send step coordinates
 		socket.emit('step',{
@@ -88,49 +83,32 @@ $(document).ready(function(){
 			column: column,
 			inst: currentGridIndex
 		});
-	
 	// exit on unclick
 	}).on("mouseup",'.row .step',function(){
 		mouseIsClicked = false;
-	
 	// subsequent dragged cells
 	}).on("mouseleave",'.selected .row .step',function(){
 			// toggle corresponding polarity grid cell
 			if(mouseIsClicked){
-			if(lastCellLeft){
-				twoCellsBack = lastCellLeft;
-				$(".twoCellsBack").removeClass("twoCellsBack");
-			    $(".lastcell").toggleClass("twoCellsBack");
-				// console.log(twoCellsBack)
-			}
-
+				if(lastCellLeft){
+					twoCellsBack = lastCellLeft;
+					$(".twoCellsBack").removeClass("twoCellsBack");
+				    $(".lastcell").toggleClass("twoCellsBack");
+				}
 			column = $(this).index();
 			row = $(this).parent().index();
-			// console.log('You left:  ', column, row);
 			$(".lastcell").removeClass("lastcell");
 			lastCellLeft=$(this).toggleClass("lastcell");
 			}
-			// theGrid[row][column] =  theGrid[row][column] * -1;
-			
-			// // send step coordinates
-			//  socket.emit('step',{
-			// 	row: row,
-			//  	column: column
-		 // // });
 		}).on("mouseenter", '.selected .row .step',function(){
 		if(mouseIsClicked){
-
 			// toggle corresponding polarity grid cell
 			if($(this).hasClass("twoCellsBack")){
-				lastCellLeft.toggleClass("clicked")
-				
+				lastCellLeft.toggleClass("clicked")	
 			}
-
 			column = $(this).index();
 			row = $(this).parent().index();
 			// console.log('You entered:  ',column,row)
-			
-			
 			// send step coordinates
 			socket.emit('step',{
 				row: row,
@@ -148,90 +126,67 @@ $(document).ready(function(){
 		$('ul.tabs li a').removeClass('selected');
 		$('.tab-content').removeClass('selected');
 		currentGridIndex = $("ul.tabs li a").index(this)-1;
+		console.log(currentGridIndex);
 		$(this).addClass('selected');
 		$("#"+tab_id+"").addClass('selected');
 		if(!$('.tab-content').hasClass('selected')){
 		ix = $('.tab-link').index(this);
 		$('.tab-content:eq('+ix+')').addClass('selected')
-		
 		}
-		if(instrumentOutputs[currentGridIndex]){
-			$('#output').val(instrumentOutputs[currentGridIndex].name);
+		// This sets the output so the users knows that output on their current tab...
+		if(instruments[currentGridIndex] && currentGridIndex>0){
+			$('#output').val(instruments[currentGridIndex].out.name);
 		}else{
 			$('#output').val('Pick yr MIDI out!');
 		}
 		
 	});
 
-	// get current grid state from server
-	socket.on('connection',function(data){
-		
-	grids = data.grid;
-	if(grids){
-		for (var h = 0; h < grids.length;h++){
-			var thisGrid = grids[h];
-			for (var i = 0; i < thisGrid.length ; i++) {
-				for (var j = 0; j < columns; j++) {
-					if (grids[h][i][j] > 0) {
-						$(".gridContainer:eq("+h+") .row:eq("+i+") .step:eq("+j+")").toggleClass("clicked");
-						currentNotes[h][j].push(i+rootNote);
-					}
-				}
-			}
-		}
-	}
-	});
-
-	
 
 	// update style on '+' button
 	$('#plus').mousedown(function(){
 		$('.newInstrument').toggleClass("clicked");
+
+
+
 	});
+
+	$('.cancel').click(function(){
+		$('.newInstrument').toggleClass("clicked");
+		$('ul.tabs li a').removeClass('selected');
+		$('.tab-content').removeClass('selected');
+		$('ul.tabs li a:eq(1)').addClass('selected');
+		$('.tab-content:eq(1)').addClass('selected');
+
+
+	})
+
+	$("#presets").change(function(){
+		type = $('option:selected', this).index()-1	
+		console.log(type);
+	});
+		
 
 	// create new instance from user menu specs
 	$(".newInsButton").click(function(){
 		var instName = $("#insName").val();
 		var rowCount = $("#rowCount").val();
+
+		
 		socket.emit('newInst',{
 			name: instName,
-			rowCount: rowCount
+			rowCount: rowCount,
+			type: presets[type]
 		});
-		// console.log("instName:  ", instName);
-		// console.log("rowCount:   ",rowCount);
 	});
 
 	socket.on('newInstReturn',function(data){
-		// console.log('rowCount:  ',data.rowCount,'name:  ', data.name);
-		$('ul.tabs li a').removeClass('selected');
-		$('.tab-content').removeClass('selected');
-		
-		//Create Tab
-		var newTab = '<li><a class="tab-link selected" data-tab="'+data.name+'">'+data.name+'  <input type="image" class="deletetab" src="littlex.png"></input></a></li>';
-		$('.tabs').append(newTab);
-
-		//Creating The New Grid
-		var newPane = $('<div class="tab-content selected" id="'+data.name+'"></div>');
-		
-		var gc = $('<div class="gridContainer"></div>').appendTo(newPane);
-		// 	console.log(gc);
-		var thisElement = $('.tab-content.current .gridContainer');
-		
-
-		var newGrid = grid(data.rowCount,columns,gc);
-		
-		// console.log('the new grid:   ',newGrid);
-
-		// gc.append(newGrid);
-		newPane.appendTo($('#tab-spot'));
-		currentGridIndex = numInsts;
-		numInsts++;
-		// console.log('from new inst:  ', currentGridIndex);
-		
-
+		currentGridIndex = instruments.length;
+		instruments.push(new TBDgrid(data.name,data.rowCount,columns,data.type));
 	});
 
 	// clear grid
+	
 	$("#clearcurrent").click(function(){
 		socket.emit('clearcurrent',{inst: currentGridIndex});
 	});
@@ -242,24 +197,14 @@ $(document).ready(function(){
 
 	// update grid on clear
 	socket.on('clearcurrentreturn', function(data){
-			$(".gridContainer:eq("+data.inst+")").find(".clicked").removeClass("clicked");
-			currentNotes[data.inst] = [];
-			for (var y = 0;y<columns;y++){
-			currentNotes[data.inst].push([]);	
-			}
-			grids = data.grids;
+		instruments[data.inst].clear(data.inst);
+		// $(".gridContainer:eq("+ix+")").find(".clicked").removeClass("clicked");
 	});
 
-	socket.on('clearallreturn', function(data){
-			$(".gridContainer").find(".clicked").removeClass("clicked");
-			console.log("Clear all");
-			grids = data.grids;
-			for(i=0;i<currentNotes.length;i++){
-				currentNotes[i] = [];
-				for (var y = 0;y<columns;y++){
-				currentNotes[i].push([]);	
-				}
-			}
+	socket.on('clearallreturn', function(){
+		for(var i = 0;i < instruments.length;i++){
+			instruments[i].clear(i);
+		}
 	});
 
 	$('#tempo').change(function(){
@@ -287,22 +232,11 @@ $(document).ready(function(){
 	})
 
 
-
-	
-
 	// update steps from all users
 	socket.on('stepreturn',function(data){	
 		$(".gridContainer:eq("+data.inst+") .row:eq("+data.row+") .step:eq("+data.column+")").toggleClass("clicked");
-		grids[data.inst][data.row][data.column] *= -1;
-		console.log(data.inst);
-		
-		if(grids[data.inst][data.row][data.column]>0){
-		currentNotes[data.inst][data.column].push(data.row + rootNote);
-		}else{
-		searchIx = currentNotes[data.inst][data.column].indexOf(data.row + rootNote);
-		currentNotes[data.inst][data.column].splice(searchIx,1);
-		}
-		// console.log('row:  ', data.row, 'column:  ', data.column);
+		instruments[data.inst].poleGrid[data.row][data.column] *= -1;
+		instruments[data.inst].updateNotes(data.row,data.column);
 	})
 
 	// send a chat msg via click
@@ -356,18 +290,11 @@ $(document).ready(function(){
 	});
 
 	socket.on('deletereturn',function(data){
-		
 		ix = data.tab2delete+1;
-		
 		$('.tab-link:eq('+ix+')').parent().remove();
 		$('.tab-content:eq('+ix+')').remove();
-		
 		ix-=1;
-		console.log(ix);
-		grids.splice(ix,1);
-		currentNotes.splice(ix,1);
-
-		
+		instruments.splice(ix,1);
 		$('.tab-link:eq('+ix+')').addClass('selected');
 		$('.tab-content:eq('+ix+')').addClass('selected');
 	})
@@ -375,19 +302,18 @@ $(document).ready(function(){
 });
 
 clock = new Tone.Clock(function(){
-	
-	$('.step').removeClass('current');
 	counter = this.ticks%columns;
-	allRows = $('.step:eq('+counter+')', '.row').toggleClass('current');
-
-	for(i=0;i<instrumentOutputs.length;i++){
-		if(instrumentOutputs[i]){
-			instrumentOutputs[i].playNote(currentNotes[i][counter],1);
-			instrumentOutputs[i].stopNote(currentNotes[i][counter],1,{time: '+500'});
+	for(i=0;i<instruments.length;i++){
+		if(instruments[i].out && instruments[i].notes[counter]){
+			instruments[i].out.playNote(instruments[i].notes[counter],1);
+			instruments[i].out.stopNote(instruments[i].notes[counter],1,{time: '+750'});
 		}
 	}
-		// console.log(currentNotes);
+	$('.step').removeClass('current');
+	allRows = $('.step:eq('+counter+')', '.row').toggleClass('current');
 }, 2);
+
+
 
 // message submit and tag search fn def
 function messageSubmit() {
@@ -415,69 +341,4 @@ function messageSubmit() {
 
 
 
-function grid(rows, columns, element){
-	// initial values
-	var w = 100/columns;
-	var h = 100/rows;
-	var labels = $("<div class='gridlabels'></div>")
 	
-	
-	// create the column of labels
-	for(var i = 0; i < rows; i++){
-		thisNote = noteNames[i%noteNames.length];
-		thisOctave = Math.floor(i/noteNames.length);
-		var rowLabel = $("<div class='rowlabel'>"+thisNote+thisOctave+"</div>").appendTo(labels);		
-	}
-	element.append(labels);
-
-	// create the grid
-	var gr = $("<div class='grid'></div>")
-
-	for(var i = 0; i < rows; i++){
-		var row = $("<div class='row'></div>").appendTo(gr);
-		for(var k = 0; k < columns; k++){
-			row.append("<div class='step'></div>");
-		}
-	}
-	element.append(gr);
-
-	// size elements based pct for flexible resizing
-	gr.find(".row").css({
-		"height": h+"%"
-	});
-	
-	gr.find(".step").css({
-		"width": w+"%"
-	});
-	gr.parent().find(".rowlabel").css({
-	"height": h+"%"
-	});
-
-	// Create the polarity grid for click/unclick
-	grids.push(createGrid(rows,columns))
-	instrumentOutputs.push(0);
-	for (var y = 0;y<columns;y++){
-		blankCurNotes.push([]);	
-	}
-	currentNotes.push(blankCurNotes);
-	blankCurNotes = [];
-	
-
-	// return completed grid
-	return gr;
-}
-
-function createGrid(rows,columns){
-  var newGrid = [];
-  var newRow = []
-  for(var i = 0; i < rows; i++){
-    for(var k = 0; k < columns; k++){
-      newRow.push(-1);
-    }
-    newGrid.push(newRow);
-    newRow = [];
-    
-  }
-  return newGrid;
-}
-
