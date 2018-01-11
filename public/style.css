@@ -151,6 +151,10 @@ body {
     font-style:italic;
     border-top: solid 1px white;
     font-size:100%;
+    -webkit-user-select: none;  /* Chrome all / Safari all */
+    -moz-user-select: none;     /* Firefox all */
+    -ms-user-select: none;      /* IE 10+ */
+    user-select: none;      
 }
 
 .step {
@@ -257,8 +261,12 @@ body {
 
 .tab-link.selected{
     background-color: hotpink;
-    border-radius: 25%;
-    padding: 8px;
+    border-top-left-radius: 25%;
+    border-top-right-radius: 25%;
+    border-bottom-left-radius: 0%;
+    border-bottom-right-radius: 0%;
+    border: solid 1px white;
+    padding: 6px;
 }
 
 .deletetab{
@@ -311,4 +319,15 @@ ul.tabs li.selected{
 #startstop.started{
     background-color:red;
 
+}
+
+.modal-header{
+    text-shadow: 2px 2px skyblue;
+    background-color: black;
+    color: red;
+    margin-bottom:5px;
+}
+
+#greeting{
+    margin-bottom:5px;
 }

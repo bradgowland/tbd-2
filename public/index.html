@@ -11,8 +11,28 @@
 		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 		<script src="Tone.min.js"></script>
 		<script src="webmidi.min.js"></script>
+		<script src="p5.min.js"></script>
 	</head>
 	<body> 
+		<div id="roomPicker" class="modal fade" role="dialog">
+		  <div class="modal-dialog">
+		    <!-- Modal content-->
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <h4 class="modal-title">tbd 2</h4>
+		      </div>
+		      <div class="modal-body">
+		        <div id="greeting">Pick a room to join and a username for the sesh!</div>
+		        <div><input id="roomName" type="text" placeholder="enter room name"></input></div>
+		        <div><input id="username" type="text" placeholder="enter a username"></input></div>
+		      </div>
+		      <div class="modal-footer">
+		        <button id="roomButton" type="button" class="btn btn-default" data-dismiss="modal">Go!</button>
+		      </div>
+		    </div>
+		  </div>
+		</div>
+
 		<!-- Outer Container -->
 		<div class="container">
 			<div class="topBar">
@@ -69,7 +89,7 @@
 			<div class="bottombar" style="height:100%">
 				<div id="chatWidnow">
 				    <div id="title_bar">
-				    	<div><input id="username" type="text" placeholder="enter a username"></input><div id="minMax">-</div></div>
+				    	<div id="chatRoom"></div>
 				    </div>
 			    	<div id="messageBox">
 			    		<ul class="messages"></ul>
