@@ -72,21 +72,6 @@ $(document).ready(function(){
 			var chatLabel = "In room: " + roomID;
 			$('#chatRoom').text(chatLabel);
 		}
-
-	} else if (url.includes("http://localhost:8081/")) {
-		// if a room is appended to base url, join that room
-		if (url.replace("http://localhost:8081/","") != "") {
-			// get the roomID from url string
-			roomID = url.replace("http://localhost:8081/","")
-			roomID = roomID.replace("/", "")
-
-			// send roomID to server for connection
-			socket.emit('room', {roomID: roomID});
-
-			// update chat label with roomID
-			var chatLabel = "In room: " + roomID;
-			$('#chatRoom').text(chatLabel);
-		}
 	} else {
 		// TODO: catch all for local network IPs -- take out after testing
 		var temp = url.split("").reverse();
@@ -106,9 +91,14 @@ $(document).ready(function(){
 	    $('#roomPicker').modal('show');
 	    $('#roomButton').click(function(e) {
 	        roomID = $("#roomName").val();
-	        // send roomID to server for connection
-			socket.emit('room', {roomID: roomID});
+
+					// send roomID to server for connection
+					socket.emit('room', {roomID: roomID});
 	        username = $('#username').val();
+
+					// update chat label with roomID
+					var chatLabel = "In room: " + roomID;
+					$('#chatRoom').text(chatLabel);
 	    });
 	// modal for username only if roomID came from url
 	} else {
@@ -116,9 +106,9 @@ $(document).ready(function(){
 		$('#roomPicker').modal('show');
 		$('#greeting').text("Pick a username for the sesh!")
 		$('#roomName').hide();
-	    $('#roomButton').click(function(e) {
-	        username = $('#username').val();
-	    });
+    $('#roomButton').click(function(e) {
+        username = $('#username').val();
+    });
 	}
 
 	// get current grid state from server
@@ -167,12 +157,12 @@ $(document).ready(function(){
 				if(lastCellLeft){
 					twoCellsBack = lastCellLeft;
 					$(".twoCellsBack").removeClass("twoCellsBack");
-				    $(".lastcell").toggleClass("twoCellsBack");
+				  $(".lastcell").toggleClass("twoCellsBack");
 				}
-			column = $(this).index();
-			row = $(this).parent().index();
-			$(".lastcell").removeClass("lastcell");
-			lastCellLeft=$(this).toggleClass("lastcell");
+				column = $(this).index();
+				row = $(this).parent().index();
+				$(".lastcell").removeClass("lastcell");
+				lastCellLeft=$(this).toggleClass("lastcell");
 			}
 		}).on("mouseenter", '.selected .row .step',function(){
 		if(mouseIsClicked){
