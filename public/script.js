@@ -22,9 +22,11 @@ var notesToPlay, notesToStop;
 
 var roomID = -1;
 var username = "";
+var currInst;
 
 function setup(){
 	frameRate(2);
+	noLoop();
 }
 
 //enable WebMIDI
@@ -120,10 +122,13 @@ $(document).ready(function(){
 	}
 
 	// get current grid state from server
-	socket.on('connection',function(data){
+	socket.on('joinSession',function(data){
+
 	if(data.instruments){
 		for (var h = 0; h < data.instruments.length;h++){
-			instruments[h].connection(data.instruments[h].grid,h);
+			currInst = data.instruments[h];
+			instruments.push(new TBDgrid(currInst.name,currInst.rows,currInst.cols,currInst.type));
+			instruments[h].connection(currInst.grid,h);
 		}
 	}
 	});
@@ -177,7 +182,7 @@ $(document).ready(function(){
 			}
 			column = $(this).index();
 			row = $(this).parent().index();
-			// console.log('You entered:  ',column,row)
+
 			// send step coordinates
 			socket.emit('step',{
 				row: row,
@@ -248,7 +253,7 @@ $(document).ready(function(){
 
 		socket.emit('newInst',{
 			name: instName,
-			rowCount: rowCount,
+			rows: rowCount,
 			type: presets[type],
 			roomID: roomID
 		});
@@ -256,7 +261,7 @@ $(document).ready(function(){
 
 	socket.on('newInstReturn',function(data){
 		currentGridIndex = instruments.length;
-		instruments.push(new TBDgrid(data.name,data.rowCount,columns,data.type));
+		instruments.push(new TBDgrid(data.name,data.rows,columns,data.type));
 	});
 
 	// clear grid

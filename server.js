@@ -28,10 +28,12 @@ io.on('connection', function(socket){
     // TODO: instantiate new session or return existing session
     roomIndex = rooms.indexOf(roomID);
     if (roomIndex > -1) {
-        sessions[roomIndex].onConnection();
+        sessions[roomIndex].onConnection(socket);
+        console.log('We found ',roomID);
     } else {
       rooms.push(roomID);
-      roomIndex = sessions.push(new session(roomID));
+      roomIndex = sessions.push(new session(roomID,socket));
+      console.log('Creating ', roomID);
       roomIndex -= 1;
     }
   });
@@ -88,7 +90,7 @@ io.on('connection', function(socket){
     });
   });
 
-  socket.on('clearall', function(){
+  socket.on('clearall', function(data){
     // clear current grid state
     console.log('Clear all')
     for(var i = 0; i < sessions[getIx(data.roomID)].instruments.length; i++){
@@ -124,7 +126,7 @@ function createGrid(rows,columns){
   var newGrid = [];
   var newRow = []
   for(var i = 0; i < rows; i++){
-    for(var k = 0; k < cols; k++){
+    for(var k = 0; k < columns; k++){
       newRow.push(-1);
     }
     newGrid.push(newRow);
@@ -140,17 +142,18 @@ function TBDinstrument(name, rows, cols, type){
 	this.cols = cols;
 	this.name = name;
   this.type = type;
+  this.grid = createGrid(rows,cols);
 	this.clear = function(){
 		this.grid = createGrid(this.rows,this.columns);
 	}
 	// Create the polarity grid for click/unclick
-	this.grid = createGrid(rows,cols);
+
 
 }
 
-function session(roomID){
-  // always run on instantiation
-  this.onConnection();
+function session(roomID,socket){
+
+
 
   this.roomID = roomID;
   this.users = [];
@@ -160,7 +163,14 @@ function session(roomID){
     // TODO: callback in script.js to receive sync
     io.to(this.roomID).emit('joinSession');
   }
-  this.onConnection = function(){
+  socket.emit('joinSession',
+    {
+      users: this.users,
+      instruments: this.instruments,
+      tempo: this.tempo
+    });
+
+  this.onConnection = function(socket){
     // TODO: fill in all data to send
     socket.emit('joinSession',
       {

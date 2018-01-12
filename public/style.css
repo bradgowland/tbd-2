@@ -1,8 +1,8 @@
 body {
-    padding: 20px; 
+    padding: 20px;
     margin: 10px;
     background: linear-gradient(90deg, aqua, hotpink);
-} 
+}
 
 /*li {
     padding: 5px 10px;
@@ -65,8 +65,8 @@ body {
 .grid{
     height: inherit;
     width:100%;
-    cursor: pointer; 
-    
+    cursor: pointer;
+
 }
 
 
@@ -84,16 +84,23 @@ body {
     background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
     text-align: center;
     vertical-align: middle;
-    
+
 }
+
 
 .instPane{
     display: inline-block;
-    width:300px;
-    height:100px;
+    width:400px;
+    height:38%;
     background-color: white;
     margin-left: center;
     margin-top: 20%;
+    border-radius: 2%;
+    overflow: auto;
+    vertical-align: middle;
+    font-style: italic;
+    font-weight: 500;
+
 }
 
 .gridContainer{
@@ -103,7 +110,7 @@ body {
     padding-right: 0px;
     padding-left: 0px;
     height:400px;
-    
+
 }
 
 .grid.hidden{
@@ -115,7 +122,7 @@ body {
     justify-content: left;
     height:inherit;
     /*width:3%;*/
-    
+
     border-right: solid black 1px;
     font-size:unset;
     color:white;
@@ -154,7 +161,7 @@ body {
     -webkit-user-select: none;  /* Chrome all / Safari all */
     -moz-user-select: none;     /* Firefox all */
     -ms-user-select: none;      /* IE 10+ */
-    user-select: none;      
+    user-select: none;
 }
 
 .step {
@@ -170,7 +177,7 @@ body {
 	-webkit-user-select: none;  /* Chrome all / Safari all */
     -moz-user-select: none;     /* Firefox all */
     -ms-user-select: none;      /* IE 10+ */
-    user-select: none;          /* Likely future */  
+    user-select: none;          /* Likely future */
 }
 
 .step.clicked{
@@ -184,7 +191,7 @@ body {
     -webkit-user-select: none;  /* Chrome all / Safari all */
     -moz-user-select: none;     /* Firefox all */
     -ms-user-select: none;      /* IE 10+ */
-    user-select: none;          /* Likely future */  
+    user-select: none;          /* Likely future */
 }
 
 .step.current{
@@ -201,7 +208,7 @@ body {
 	-webkit-user-select: none;  /* Chrome all / Safari all */
     -moz-user-select: none;     /* Firefox all */
     -ms-user-select: none;      /* IE 10+ */
-    user-select: none;          /* Likely future */  
+    user-select: none;          /* Likely future */
 }
 
 #username {
@@ -230,7 +237,7 @@ body {
     width: 100%;
 }
 
-#minMax { 
+#minMax {
     border:solid 1px;
     width: 25px;
     height: 23px;
@@ -255,8 +262,8 @@ body {
     background-color: grey;
     color: white;
     padding:0;
-    border:none; 
-    vertical-align: middle;   
+    border:none;
+    vertical-align: middle;
 }
 
 .tab-link.selected{
@@ -322,10 +329,11 @@ ul.tabs li.selected{
 }
 
 .modal-header{
-    text-shadow: 2px 2px skyblue;
+    text-shadow: 1px 1px skyblue;
     background-color: black;
     color: red;
     margin-bottom:5px;
+    font-size: 20px;
 }
 
 #greeting{

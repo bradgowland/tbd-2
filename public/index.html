@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8"/>
 		<!-- <meta name="viewport" content="width=device-width"> -->
-		<title>tbd 2</title> 
+		<title>tbd 2</title>
 		<script src="/socket.io/socket.io.js"></script>
 		<link rel="stylesheet" type="text/css" href="style.css" />
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
@@ -13,7 +13,7 @@
 		<script src="webmidi.min.js"></script>
 		<script src="p5.min.js"></script>
 	</head>
-	<body> 
+	<body>
 		<div id="roomPicker" class="modal fade" role="dialog">
 		  <div class="modal-dialog">
 		    <!-- Modal content-->
@@ -44,32 +44,40 @@
 				  <li><a class="tab-link selected" data-tab="plus">+</a></li>
 				  <!-- <li><a class="tab-link" data-tab="tweet">tweet</a></li> -->
 				</ul>
-				
-				<!-- Tab panes -->
-	
 
-				  
+				<!-- Tab panes -->
+
+
+
 			<div class="tab-content selected" id="plus">
 				  	<div class="newInstrument">
 				  		<div class="instPane">
-				  		Would you like to add another instrument? <br />
-				  		What is the name?
-				  		<input type="text" id="insName"> <br />
-				  		How many notes?
-				  		<input type="number" id ="rowCount"> <br />
-				  		<select id='presets'>
-				  			<option>Try a preset</option>
-				  			<option>Drums</option>
-				  			<option>Major Scale</option>
-				  			<option>Minor Scale</option>
-				  			<option>Blues Scale</option>
-				  			<option>Full Grid</option>
-				  			<option>Chords</option>
+							<div class="inst-modal modal-header" id="topbar">
+				  		Add another instrument! <br />
+						</div>
 
-				  		</select>
-				  		<button class="newInsButton">Let's play!</button>
-				  		<button class="cancel">Cancel</button>
-		  	 		</div>	
+							<p>What is the name?
+							<input type="text" id="insName"> <br /></p>
+							<p>
+							<select id='presets'>
+								<option>Try a preset</option>
+								<option>Drums</option>
+								<option>Major Scale</option>
+								<option>Minor Scale</option>
+								<option>Blues Scale</option>
+								<option>Full Grid</option>
+								<option>Chords</option>
+								</select>
+							</p>
+				  		<p>How many notes?
+				  		<input type="number" id ="rowCount"> <br />
+						</p>
+							<div class="modal-footer">
+							<p>
+				  		<button class="newInsButton btn btn-default">Let's play!</button>
+				  		<button class="cancel btn btn-default" type="button" data-dismiss="modal">Cancel</button></p>
+						</div>
+						</div>
 		  	 	</div>
 			</div>
 
@@ -77,7 +85,7 @@
 			</div>
 			<div class="midbar">
 				<button id="startstop" class="buttonbar">Start!</button>
-				
+
 				<input type="number" id ="tempo" class="buttonbar" value="120">
 				<button id="clearall" class="buttonbar">clear 'em all</button>
 				<button id="clearcurrent" class="buttonbar">clear this one</button>
@@ -85,7 +93,7 @@
 					<option>Pick yr MIDI out!</option>
 				</select>
 			</div>
-		
+
 			<div class="bottombar" style="height:100%">
 				<div id="chatWidnow">
 				    <div id="title_bar">
@@ -102,7 +110,7 @@
 				</div>
 			</div>
 		</div>
-	
+
 		<script src="script.js"></script>
 		<script src="grid.js"></script>
 		<script src="instrumentprototypes.js"></script>
