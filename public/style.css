@@ -19,6 +19,14 @@ body {
     text-shadow: 3px 2px black;
 }
 
+.ital_text {
+    color: white;
+    font-family: "Helvetica";
+    font-style: italic;
+    font-size: 150%;
+    text-align: left;
+    letter-spacing: 1px;
+}
 
 #chatClear {
     background: lightgrey;
@@ -214,6 +222,7 @@ body {
 #username {
     display: inline-block;
     vertical-align: top;
+    margin-top: 5px;
     margin-bottom: 5px;
     width: 70%;
 }
