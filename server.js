@@ -5,7 +5,9 @@ var io = require('socket.io')(http);
 var normalizeSocket = require("normalize-port");
 var port = normalizeSocket(process.env.PORT || "8081");
 var instrumentArray = [];
+// session objects
 var sessions = [];
+// names of all rooms
 var rooms = [];
 var roomID = "";
 var roomIndex = -1;
@@ -13,19 +15,33 @@ var roomIndex = -1;
 app.use(express.static('public'));
 
 // dynamic url for rooms
-app.get('/:dynamicroute', function(req,res) {
+// test
+app.get('/', function(req, res){
   res.sendFile(__dirname + '/public/index.html')
+});
+app.get('/:dynamicroute', function(req,res) {
+  res.sendFile(__dirname + '/public/app.html')
 });
 
 io.on('connection', function(socket){
   // connection console check
   console.log('A user connected');
 
+  // timeout warning console check
+  setTimeout(function(){
+    socket.send('Sent a message 4 seconds after connection!');
+  }, 4000);
+
+  // disconnect console check
+  socket.on('disconnect', function () {
+    console.log('A user disconnected');
+  });
+
   // connect socket to room
   socket.on('room', function(data) {
     roomID = data.roomID;
     socket.join(roomID);
-    // TODO: instantiate new session or return existing session
+    // instantiate new session or return existing session
     roomIndex = rooms.indexOf(roomID);
     if (roomIndex > -1) {
         sessions[roomIndex].onConnection(socket);
@@ -48,25 +64,20 @@ io.on('connection', function(socket){
     }
   });
 
-  // TODO: Delete when not needed: should be superceded by onConnection method
-	// This should update the instruments when a user connects
-  // for(i = 0;i<grids.length;i++){
-  //   socket.emit('newInstReturn', instrumentArray[i]);
-  // }
-  //
-  //
-  // socket.emit('connection', {
-  //   grid: grids
-  // });
+  // add user to session by roomID
+  socket.on('user', function(data) {
+    roomID = data.roomID;
+    username = data.username;
 
-  // timeout warning console check
-  setTimeout(function(){
-    socket.send('Sent a message 4 seconds after connection!');
-  }, 4000);
+    // find room, add user
+    roomIndex = rooms.indexOf(roomID);
+    sessions[roomIndex].users.push(username);
 
-  // disconnect console check
-  socket.on('disconnect', function () {
-    console.log('A user disconnected');
+    // send full user list to all users in rooms
+    io.to(data.roomID).emit('update users', {users: sessions[roomIndex].users});
+
+    // console check
+    console.log("Users in ", roomID, ": ", sessions[roomIndex].users)
   });
 
   // distribute user step changes
@@ -75,7 +86,6 @@ io.on('connection', function(socket){
     // send step to clients
     io.to(data.roomID).emit('stepreturn', data);
   });
-
 
   // create new instrument and correstponding grid
   socket.on('newInst',function(data){
@@ -94,7 +104,7 @@ io.on('connection', function(socket){
   socket.on('clearcurrent', function(data){
     // clear current grid state
     sessions[getIx(data.roomID)].instruments[data.inst].clear();
-  // send clear message to clients
+    // send clear message to clients
     io.emit('clearcurrentreturn',{
       inst: data.inst,
     });
@@ -170,7 +180,7 @@ function createGrid(rows,columns){
   return newGrid;
 }
 
-
+// instrument object
 function TBDinstrument(name, rows, cols, type){
 	this.rows = rows;
 	this.cols = cols;
@@ -185,6 +195,7 @@ function TBDinstrument(name, rows, cols, type){
       row.fill(-1);
     });
 	}
+
   this.reversex = function(){
     for(i=0;i<this.grid.length;i++){
       this.grid[i].reverse();
@@ -196,13 +207,10 @@ function TBDinstrument(name, rows, cols, type){
   }
 	// Create the polarity grid for click/unclick
 
-
 }
 
+// session object
 function session(roomID,socket){
-
-
-
   this.roomID = roomID;
   this.users = [];
   this.instruments = [];
@@ -222,6 +230,15 @@ function session(roomID,socket){
       });
   }
 
+}
+
+// TODO: fix this up with everything you need for a personal edit history
+function user(username) {
+  // stuff like:
+  // this.undo
+  // this.redo
+  // this.private
+  // this.pushChanges
 }
 
 function getIx(roomID){

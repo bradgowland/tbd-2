@@ -2,8 +2,6 @@
 var socket = io();
 
 // initialize values
-
-
 var rootNote = 40;
 var row, column;
 var columns = 32;
@@ -23,6 +21,7 @@ var mousemode = 0;
 
 var roomID = -1;
 var username = "";
+var users = [];
 var currInst;
 
 function setup(){
@@ -95,7 +94,14 @@ $(document).ready(function(){
 
 					// send roomID to server for connection
 					socket.emit('room', {roomID: roomID});
-	        username = $('#username').val();
+
+					// capture username, send to server for association to room
+					username = $('#username').val();
+					socket.emit('user',
+					{
+							roomID: roomID,
+							username: username
+					});
 
 					// update chat label with roomID
 					var chatLabel = "In room: " + roomID;
@@ -107,20 +113,47 @@ $(document).ready(function(){
 		$('#roomPicker').modal('show');
 		$('#greeting').text("Pick a username for the sesh!")
 		$('#roomName').hide();
-    $('#roomButton').click(function(e) {
-        username = $('#username').val();
+    $('#roomButton').click(function() {
+				// capture username, send to server for association to room
+				// TODO: check for usernme, only send if available
+				username = $('#username').val();
+				if (users.indexOf(username) == -1) {
+					console.log(users.indexOf(username) + ": username " + username + " available.");
+					socket.emit('user',
+					{
+							roomID: roomID,
+							username: username
+					});
+				} else {
+					console.log(users.indexOf(username) + ": username " + username + " not available.");
+					$('#roomPicker').modal('show');
+					$('#greeting').text("Sorry - somebody already took that name! Try another.");
+					$('#roomName').hide();
+				}
     });
 	}
 
+	// get updated list of users after new member joins room
+	socket.on('update users', function(data){
+		users = data.users;
+		console.log(users);
+	});
+
 	// get current grid state from server
 	socket.on('joinSession',function(data){
-
-	if(data.instruments){
-		for (var h = 0; h < data.instruments.length;h++){
-			currInst = data.instruments[h];
-			instruments.push(new TBDgrid(currInst.name,currInst.rows,currInst.cols,currInst.type));
-			instruments[h].connection(currInst.grid,h);
+		// update instruments
+		if(data.instruments){
+			for (var h = 0; h < data.instruments.length;h++){
+				currInst = data.instruments[h];
+				instruments.push(new TBDgrid(currInst.name,currInst.rows,currInst.cols,currInst.type));
+				instruments[h].connection(currInst.grid,h);
+			}
 		}
+
+		// get current list of Users
+		users = data.users;
+    
+		// TODO: get current tempo
 		showTab(instruments.length);
 		currentGridIndex = instruments.length-1;
 	}
@@ -160,11 +193,8 @@ $(document).ready(function(){
 				if(lastCellLeft){
 					twoCellsBack = lastCellLeft;
 					$(".twoCellsBack").removeClass("twoCellsBack");
-<<<<<<< HEAD
-				    $(".lastcell").addClass("twoCellsBack");
-=======
+
 				  $(".lastcell").toggleClass("twoCellsBack");
->>>>>>> bb737a75580e3bd988849a22e9de5b4ff0545b97
 				}
 				column = $(this).index();
 				row = $(this).parent().index();
