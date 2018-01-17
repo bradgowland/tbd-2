@@ -19,12 +19,34 @@ body {
     text-shadow: 3px 2px black;
 }
 
+.preset-extras{
+  display: none;
+}
+
+.inst{
+  display:none;
+
+}
+
 
 #chatClear {
     background: lightgrey;
     height: inherit;
     padding: 4px;
     margin-left: 2px;
+}
+
+input:focus {
+    outline:none;
+    background-color:skyblue;
+    text-shadow: 1px 1px red;
+
+}
+
+input {
+  border-top: 0px;
+  border-left: 0px;
+  border-right: 0px;
 }
 
 #chatInput {
@@ -65,8 +87,15 @@ body {
 .grid{
     height: inherit;
     width:100%;
-    cursor: pointer;
+    cursor:url(pencil.png) 5 5,auto;
+}
+.grid.eraser{
+  cursor:url(eraser.png) 5 5,auto;
 
+}
+
+.grid.chord{
+  cursor:url(chord.png) 5 5,auto;
 }
 
 
@@ -264,6 +293,14 @@ body {
     padding:0;
     border:none;
     vertical-align: middle;
+}
+
+.reverse{
+  height:80px;
+  position:static;
+  background-color: royalblue;
+  color: white;
+
 }
 
 .tab-link.selected{

@@ -32,8 +32,6 @@ function TBDgrid(name, rows, cols,type){
 	// Gathers value to be sent to note off
 	this.updateNotes = function (row,col){
 		if(this.poleGrid[row][col]>0){
-			console.log(row);
-
 		this.notes[col].push((type.midiNotes[rows-row-1]));
 		this.notesToOff[(col+1)%this.cols].push((type.midiNotes[rows-row-1]));
 
@@ -78,15 +76,15 @@ function TBDgrid(name, rows, cols,type){
 
 	// initial values
 
-	$('ul.tabs li a').removeClass('selected');
-	$('.tab-content').removeClass('selected');
+	// $('ul.tabs li a').removeClass('selected');
+	// $('.tab-content').removeClass('selected');
 		//Create Tab
 	//Creates the Instrument Tag Link
-	var newTab = '<li><a class="tab-link selected" data-tab="'+name+'">'+name+'  <input type="image" class="deletetab" src="littlex.png"></input></a></li>';
+	var newTab = '<li><a class="tab-link" data-tab="'+name+'">'+name+'  <input type="image" class="deletetab" src="littlex.png"></input></a></li>';
 	$('.tabs').append(newTab);
 
 	//Creating The Tab Pane
-	var newPane = $('<div class="tab-content selected" id="'+name+'"></div>');
+	var newPane = $('<div class="tab-content" id="'+name+'"></div>');
 	var gc = $('<div class="gridContainer"></div>').appendTo(newPane);
 	newPane.appendTo($('#tab-spot'));
 

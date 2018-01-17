@@ -69,10 +69,12 @@
 								<option>Chords</option>
 								</select>
 							</p>
-				  		<p>How many notes?
-				  		<input type="number" id ="rowCount"> <br />
+							<div class="preset-extras">
+							<p>How many notes?
+				  		<input type="number" id ="rowCount" min=> <br />
 						</p>
-							<div class="modal-footer">
+					</div>
+							<div class="modal-footer inst">
 							<p>
 				  		<button class="newInsButton btn btn-default">Let's play!</button>
 				  		<button class="cancel btn btn-default" type="button" data-dismiss="modal">Cancel</button></p>
@@ -95,6 +97,13 @@
 			</div>
 
 			<div class="bottombar" style="height:100%">
+				<button id="reversex" class="reverse">REVERSE L-R</button>
+				<button id="reversey" class="reverse" style>REVERSE UP-DOWN</button>
+				<select id="mousemode" class="reverse">
+					<option>Pencil</option>
+					<option>Eraser</option>
+					<option>Chords</option>
+				</select>
 				<div id="chatWidnow">
 				    <div id="title_bar">
 				    	<div id="chatRoom"></div>

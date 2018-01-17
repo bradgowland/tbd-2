@@ -8,7 +8,7 @@ var rootNote = 40;
 var row, column;
 var columns = 32;
 var lastCellLeft,twoCellsBack;
-
+var userThatClicked = false;
 var currentGridIndex = 0;
 var counter = 0;
 var tempo;
@@ -19,6 +19,7 @@ var instruments = [];
 var searchIx;
 var type;
 var notesToPlay, notesToStop;
+var mousemode = 0;
 
 var roomID = -1;
 var username = "";
@@ -72,21 +73,6 @@ $(document).ready(function(){
 			var chatLabel = "In room: " + roomID;
 			$('#chatRoom').text(chatLabel);
 		}
-
-	} else if (url.includes("http://localhost:8081/")) {
-		// if a room is appended to base url, join that room
-		if (url.replace("http://localhost:8081/","") != "") {
-			// get the roomID from url string
-			roomID = url.replace("http://localhost:8081/","")
-			roomID = roomID.replace("/", "")
-
-			// send roomID to server for connection
-			socket.emit('room', {roomID: roomID});
-
-			// update chat label with roomID
-			var chatLabel = "In room: " + roomID;
-			$('#chatRoom').text(chatLabel);
-		}
 	} else {
 		// TODO: catch all for local network IPs -- take out after testing
 		var temp = url.split("").reverse();
@@ -106,9 +92,14 @@ $(document).ready(function(){
 	    $('#roomPicker').modal('show');
 	    $('#roomButton').click(function(e) {
 	        roomID = $("#roomName").val();
-	        // send roomID to server for connection
-			socket.emit('room', {roomID: roomID});
+
+					// send roomID to server for connection
+					socket.emit('room', {roomID: roomID});
 	        username = $('#username').val();
+
+					// update chat label with roomID
+					var chatLabel = "In room: " + roomID;
+					$('#chatRoom').text(chatLabel);
 	    });
 	// modal for username only if roomID came from url
 	} else {
@@ -116,9 +107,9 @@ $(document).ready(function(){
 		$('#roomPicker').modal('show');
 		$('#greeting').text("Pick a username for the sesh!")
 		$('#roomName').hide();
-	    $('#roomButton').click(function(e) {
-	        username = $('#username').val();
-	    });
+    $('#roomButton').click(function(e) {
+        username = $('#username').val();
+    });
 	}
 
 	// get current grid state from server
@@ -130,6 +121,8 @@ $(document).ready(function(){
 			instruments.push(new TBDgrid(currInst.name,currInst.rows,currInst.cols,currInst.type));
 			instruments[h].connection(currInst.grid,h);
 		}
+		showTab(instruments.length);
+		currentGridIndex = instruments.length-1;
 	}
 	});
 
@@ -167,23 +160,37 @@ $(document).ready(function(){
 				if(lastCellLeft){
 					twoCellsBack = lastCellLeft;
 					$(".twoCellsBack").removeClass("twoCellsBack");
-				    $(".lastcell").toggleClass("twoCellsBack");
+<<<<<<< HEAD
+				    $(".lastcell").addClass("twoCellsBack");
+=======
+				  $(".lastcell").toggleClass("twoCellsBack");
+>>>>>>> bb737a75580e3bd988849a22e9de5b4ff0545b97
 				}
-			column = $(this).index();
-			row = $(this).parent().index();
-			$(".lastcell").removeClass("lastcell");
-			lastCellLeft=$(this).toggleClass("lastcell");
+				column = $(this).index();
+				row = $(this).parent().index();
+				$(".lastcell").removeClass("lastcell");
+				lastCellLeft=$(this).toggleClass("lastcell");
 			}
 		}).on("mouseenter", '.selected .row .step',function(){
 		if(mouseIsClicked){
 			// toggle corresponding polarity grid cell
 			if($(this).hasClass("twoCellsBack")){
-				lastCellLeft.toggleClass("clicked")
+				// lastCellLeft.toggleClass("clicked")
+				column = lastCellLeft.index();
+				row = lastCellLeft.parent().index();
+				socket.emit('step',{
+					row: row,
+					column: column,
+					inst: currentGridIndex,
+					roomID: roomID
+				});
 			}
 			column = $(this).index();
 			row = $(this).parent().index();
 
 			// send step coordinates
+
+		if(mousemode === 1){
 			socket.emit('step',{
 				row: row,
 				column: column,
@@ -191,13 +198,44 @@ $(document).ready(function(){
 				roomID: roomID
 			});
 		}
+
+		if(!$(this).hasClass('clicked') &&  (mousemode === 0 || mousemode === 2)){
+			socket.emit('step',{
+				row: row,
+				column: column,
+				inst: currentGridIndex,
+				roomID: roomID
+			});
+		}
+		}
 	});
 
 	// update steps from all users
 	socket.on('stepreturn',function(data){
+		if(mousemode === 0){
 		$(".gridContainer:eq("+data.inst+") .row:eq("+data.row+") .step:eq("+data.column+")").toggleClass("clicked");
 		instruments[data.inst].poleGrid[data.row][data.column] *= -1;
 		instruments[data.inst].updateNotes(data.row,data.column);
+	}
+
+	if (mousemode === 1) {
+		$(".gridContainer:eq("+data.inst+") .row:eq("+data.row+") .step:eq("+data.column+")").removeClass("clicked");
+		instruments[data.inst].poleGrid[data.row][data.column] = -1;
+		instruments[data.inst].updateNotes(data.row,data.column);
+	}
+
+	if(mousemode === 2){
+		var maxCol = instruments[data.inst].poleGrid.length;
+		for (i = 0;i<3;i++){
+			console.log(data.row-2*i);
+			if((data.row - 2*i) > 0){
+				$(".gridContainer:eq("+data.inst+") .row:eq("+(data.row - (2*i))+") .step:eq("+data.column+")").toggleClass("clicked");
+				instruments[data.inst].poleGrid[data.row-(2*i)][data.column] *= -1;
+				instruments[data.inst].updateNotes(data.row-(2*i),data.column);
+				}
+			}
+		}
+
 	});
 
 	//The tab toggler
@@ -240,16 +278,47 @@ $(document).ready(function(){
 
 	});
 
+
+//[drums,major,minor,blues,fullGrid,chords]
 	$("#presets").change(function(){
 		type = $('option:selected', this).index()-1;
+		if(type>0){
+		$('.preset-extras').show();
+		$('.inst').show();
+	}else{
+		$('.preset-extras').hide();
+		$('.inst').show();
+	}
 	});
+
+	$('#mousemode').change(function(){
+		$('.grid').removeClass('eraser');
+		mousemode = $('option:selected', this).index();
+		console.log(mousemode)
+		$('.grid').removeClass('eraser chord');
+		switch(mousemode){
+			case 0:
+			console.log("Pencil Mode");
+			break;
+			case 1:
+			$('.grid').addClass('eraser');
+			break;
+			case 2:
+			$('.grid').addClass('chord');
+			break;
+
+		}
+	})
 
 
 	// create new instance from user menu specs
 	$(".newInsButton").click(function(){
 		var instName = $("#insName").val();
 		var rowCount = $("#rowCount").val();
-
+		if(!rowCount){
+			rowCount = 12;
+		}
+		userThatClicked = true;
 
 		socket.emit('newInst',{
 			name: instName,
@@ -262,6 +331,13 @@ $(document).ready(function(){
 	socket.on('newInstReturn',function(data){
 		currentGridIndex = instruments.length;
 		instruments.push(new TBDgrid(data.name,data.rows,columns,data.type));
+		if(userThatClicked){
+			$('ul.tabs li a').removeClass('selected');
+			$('.tab-content').removeClass('selected');
+			$('ul.tabs li a:eq('+instruments.length+')').addClass('selected');
+			$('.tab-content:eq('+instruments.length+')').addClass('selected');
+			userThatClicked = false;
+		}
 	});
 
 	// clear grid
@@ -318,7 +394,36 @@ $(document).ready(function(){
 			$('.step').removeClass('current');
 
 		}
+	});
+
+	$('#reversex').click(function(){
+		socket.emit('reversex',
+		{
+			inst:currentGridIndex,
+			roomID:roomID
+		});
+	});
+
+	socket.on('reversexreturn',function(data){
+		instruments[data.inst].clear(data.inst);
+		instruments[data.inst].connection(data.grid,data.inst);
+		console.log('inst:  ',data.inst);
+		console.log('grid:  ', data.grid);
 	})
+
+	$('#reversey').click(function(){
+		socket.emit('reversey',
+		{
+			inst:currentGridIndex,
+			roomID:roomID
+		});
+	});
+
+	socket.on('reverseyreturn',function(data){
+		instruments[data.inst].clear(data.inst);
+		instruments[data.inst].connection(data.grid,data.inst);
+	})
+
 
 
 
@@ -380,6 +485,7 @@ $(document).ready(function(){
 
 });
 
+
 function draw(){
 	counter = frameCount%columns;
 	for(i=0;i<instruments.length;i++){
@@ -423,6 +529,13 @@ function messageSubmit() {
 	});
 
     $('#chatInput').val('');
+}
+
+function showTab(index){
+	$('ul.tabs li a').removeClass('selected');
+	$('.tab-content').removeClass('selected');
+	$('ul.tabs li a:eq('+index+')').addClass('selected');
+	$('.tab-content:eq('+index+')').addClass('selected');
 }
 
 // grid creation function for init and new tabs
