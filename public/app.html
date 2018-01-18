@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8"/>
+		<!-- <meta name="viewport" content="width=device-width"> -->
+		<title>tbd 2</title>
+		<script src="/socket.io/socket.io.js"></script>
+		<link rel="stylesheet" type="text/css" href="style.css" />
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<script src="Tone.min.js"></script>
+		<script src="webmidi.min.js"></script>
+		<script src="p5.min.js"></script>
+	</head>
+	<body>
+		<div id="roomPicker" class="modal fade" role="dialog">
+		  <div class="modal-dialog">
+		    <!-- Modal content-->
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <h4 class="modal-title">tbd 2</h4>
+		      </div>
+		      <div class="modal-body">
+		        <div id="greeting">Pick a room to join and a username for the sesh!</div>
+		        <div><input id="roomName" type="text" placeholder="enter room name"></input></div>
+		        <div><input id="username" type="text" placeholder="enter a username"></input></div>
+		      </div>
+		      <div class="modal-footer">
+		        <button id="roomButton" type="button" class="btn btn-default" data-dismiss="modal">Go!</button>
+		      </div>
+		    </div>
+		  </div>
+		</div>
+
+		<!-- Outer Container -->
+		<div class="container">
+			<div class="topBar">
+				<div class="bold_text">tbd 2</div>
+				<!-- New Instrument Panel -->
+				<div id="tab-spot">
+				<!-- Nav tabs -->
+				<ul class="tabs">
+				  <li><a class="tab-link selected" data-tab="plus">+</a></li>
+				  <!-- <li><a class="tab-link" data-tab="tweet">tweet</a></li> -->
+				</ul>
+
+				<!-- Tab panes -->
+
+
+
+			<div class="tab-content selected" id="plus">
+				  	<div class="newInstrument">
+				  		<div class="instPane">
+							<div class="inst-modal modal-header" id="topbar">
+				  		Add another instrument! <br />
+						</div>
+
+							<p>What is the name?
+							<input type="text" id="insName"> <br /></p>
+							<p>
+							<select id='presets'>
+								<option>Try a preset</option>
+								<option>Drums</option>
+								<option>Major Scale</option>
+								<option>Minor Scale</option>
+								<option>Blues Scale</option>
+								<option>Full Grid</option>
+								<option>Chords</option>
+								</select>
+							</p>
+							<div class="preset-extras">
+                <p>How many notes?
+                  <input type="number" id ="rowCount" min=> <br />
+                </p>
+              </div>
+							<div class="modal-footer inst">
+		  					<p>
+    				  		<button class="newInsButton btn btn-default">Let's play!</button>
+				  		    <button class="cancel btn btn-default" type="button" data-dismiss="modal">Cancel</button>
+                </p>
+						  </div>
+						</div>
+		  	 	</div>
+			</div>
+
+			</div>
+			</div>
+			<div class="midbar">
+				<button id="startstop" class="buttonbar">Start!</button>
+
+				<input type="number" id ="tempo" class="buttonbar" value="120">
+				<button id="clearall" class="buttonbar">clear 'em all</button>
+				<button id="clearcurrent" class="buttonbar">clear this one</button>
+				<select id="output" class="buttonbar" placeholder="Pick A MIDI Out">
+					<option>Pick yr MIDI out!</option>
+				</select>
+			</div>
+
+			<div class="bottombar" style="height:100%">
+				<button id="reversex" class="reverse">REVERSE L-R</button>
+				<button id="reversey" class="reverse" style>REVERSE UP-DOWN</button>
+				<select id="mousemode" class="reverse">
+					<option>Pencil</option>
+					<option>Eraser</option>
+					<option>Chords</option>
+				</select>
+				<div id="chatWidnow">
+				    <div id="title_bar">
+				    	<div id="chatRoom"></div>
+				    </div>
+			    	<div id="messageBox">
+			    		<ul class="messages"></ul>
+					</div>
+					<div id="message_bar">
+				    	<input id="chatInput" type="text" placeholder="type your message"></input>
+				    	<button type="button" class="btn btn-md btn-default-outline" id="chatSend">send</button>
+				    	<button type="button" class="btn btn-md btn-default-outline" id="chatClear">clear</button>
+				    </div>
+				</div>
+			</div>
+		</div>
+
+		<script src="script.js"></script>
+		<script src="grid.js"></script>
+		<script src="instrumentprototypes.js"></script>
+	</body>
+</html>

@@ -5,135 +5,162 @@ var io = require('socket.io')(http);
 var normalizeSocket = require("normalize-port");
 var port = normalizeSocket(process.env.PORT || "8081");
 var instrumentArray = [];
-
+// session objects
+var sessions = [];
+// names of all rooms
+var rooms = [];
+var roomID = "";
+var roomIndex = -1;
 
 app.use(express.static('public'));
 
+// dynamic url for rooms
 app.get('/', function(req, res){
-  res.sendfile('index.html');
+  res.sendFile(__dirname + '/public/index.html')
+});
+app.get('/:dynamicroute', function(req,res) {
+  res.sendFile(__dirname + '/public/app.html')
 });
 
-app.get('/session/:name', function(req, res){
-  res.send('session '+ req.params.name);
-});
-
-// initial grid state
-var grids = [];
-var grid = [];
-var row = [];
-
-var rows = 16;
-var cols = 32;
-
+// check session age every minute, remove rooms older than 1 day
+setInterval(function() {
+  console.log("Checking for timed-out sessions at current time ", new Date())
+  checkSessionAge();
+}, 3600000);
 
 io.on('connection', function(socket){
   // connection console check
   console.log('A user connected');
-  
-	// This should update the instruments when a user connects
-  for(i = 0;i<grids.length;i++){
-    socket.emit('newInstReturn', instrumentArray[i]);
-  }
-
-
-  socket.emit('connection', {
-    grid: grids
-  });
 
   // timeout warning console check
   setTimeout(function(){
     socket.send('Sent a message 4 seconds after connection!');
   }, 4000);
-  
+
   // disconnect console check
   socket.on('disconnect', function () {
     console.log('A user disconnected');
   });
-  
-  // distribute user step changes
-  socket.on('step', function(data){
-    // track master grid state
-    // console.log(data);
-    grids[data.inst][data.row][data.column] *= -1;
-    
-    // send step to clients
-    io.emit('stepreturn', data);
+
+  // connect socket to room
+  socket.on('room', function(data) {
+    roomID = data.roomID;
+    socket.join(roomID);
+    // instantiate new session or return existing session
+    roomIndex = rooms.indexOf(roomID);
+    if (roomIndex > -1) {
+        sessions[roomIndex].onConnection(socket);
+        console.log('We found ',roomID);
+    } else {
+      rooms.push(roomID);
+      console.log('Creating ', roomID);
+
+      roomIndex = sessions.push(new session(roomID,socket));
+      roomIndex -= 1;
+      sessions[roomIndex].instruments.push( new TBDinstrument('Default',20,32,{
+      	midiNotes: [],
+      	scale: [0,2,4,5,7,9,11],
+      	labels: [],
+      	rows: 0,
+      	melodic: 1
+      }));
+      sessions[roomIndex].onConnection(socket);
+    }
+    sessions[getIx(roomID)].created = new Date();
+    console.log("New room created at ", new Date(sessions[getIx(roomID)].created))
   });
 
-  
+  // add user to session by roomID
+  socket.on('user', function(data) {
+    roomID = data.roomID;
+    username = data.username;
+
+    // find room, add user
+    roomIndex = rooms.indexOf(roomID);
+    sessions[roomIndex].users.push(username);
+
+    // send full user list to all users in rooms
+    io.to(data.roomID).emit('update users', {users: sessions[roomIndex].users});
+
+    // console check
+    console.log("Users in ", roomID, ": ", sessions[roomIndex].users)
+  });
+
+  // distribute user step changes
+  socket.on('step', function(data){
+    sessions[getIx(data.roomID)].instruments[data.inst].grid[data.row][data.column] *= -1;
+    // send step to clients
+    io.to(data.roomID).emit('stepreturn', data);
+  });
+
   // create new instrument and correstponding grid
   socket.on('newInst',function(data){
-    io.emit('newInstReturn', data);
-    instrumentArray.push(data)
-    var instGrid = createGrid(data.rowCount,32);
-    grids.push(instGrid)
-    // console.log(grids);
-
-
+    io.to(data.roomID).emit('newInstReturn', data);
+    sessions[getIx(data.roomID)].instruments.push(new TBDinstrument(data.name,data.rows,32,data.type));
   });
 
   // delete instrument
   socket.on('deletetab',function(data){
-    instrumentArray.splice(data.tab2delete,1);
-    grids.splice(data.tab2delete,1);
+    sessions[getIx(data.roomID)].instruments.splice(data.tab2delete,1);
     console.log('Delete the ',data.tab2delete);
-    io.emit('deletereturn',data);
-
+    io.to(data.roomID).emit('deletereturn',data);
   })
 
   // clear grid contents
   socket.on('clearcurrent', function(data){
     // clear current grid state
-    var currentGrid = grids[data.inst]
-    for (var i = 0; i < currentGrid.length; i++) {
-      for (var j = 0; j < cols; j++) {
-        grids[data.inst][i][j] = -1;
-      }
-    }
-    
-    // send clear messagw to clients
+    sessions[getIx(data.roomID)].instruments[data.inst].clear();
+    // send clear message to clients
     io.emit('clearcurrentreturn',{
       inst: data.inst,
-      grids: grids
     });
-  });  
+  });
 
-  socket.on('clearall', function(){
+  socket.on('clearall', function(data){
     // clear current grid state
     console.log('Clear all')
-    for(var h = 0; h < grids.length; h++){
-      var currentGrid = grids[h];
-      for (var i = 0; i < currentGrid.length; i++) {
-        for (var j = 0; j < cols; j++) {
-          grids[h][i][j] = -1;
-        }
-      }
+    for(var i = 0; i < sessions[getIx(data.roomID)].instruments.length; i++){
+      sessions[getIx(data.roomID)].instruments[i].clear();
     }
-    
+
     // send clear messagw to clients
-    io.emit('clearallreturn',{grids: grids});
-  }); 
+    io.to(data.roomID).emit('clearallreturn');
+  });
+
+
 
   socket.on('tempo', function(data){
-    io.emit('temporeturn', data);
-  }) 
+    sessions[getIx(data.roomID)].tempo = data.tempo*60;
+    io.to(data.roomID).emit('temporeturn', data);
+  })
 
-  // clear grid contents
-  socket.on('chatClearSend', function(data){
-    // clear master grid state
-    for (var i = 0; i < rows; i++) {
-      for (var j = 0; j < cols; j++) {
-        grid[i][j] = -1;
-      }
-    }
-    
-    // send step to clients
-    io.emit('chatClearReturn');
+  socket.on('reversex',function(data){
+    sessions[getIx(data.roomID)].instruments[data.inst].reversex();
+    console.log(sessions[getIx(data.roomID)].instruments[data.inst].grid);
+    io.to(data.roomID).emit('reversexreturn',
+    {
+      inst:data.inst,
+      grid:sessions[getIx(data.roomID)].instruments[data.inst].grid
+
+    });
   });
+
+  socket.on('reversey',function(data){
+    sessions[getIx(data.roomID)].instruments[data.inst].reversey();
+    console.log('Reversed the grid in '+data.roomID+'');
+    io.to(data.roomID).emit('reverseyreturn',
+    {
+      inst:data.inst,
+      grid:sessions[getIx(data.roomID)].instruments[data.inst].grid
+
+    });
+  });
+
+
 
   // msg to all users
   socket.on('chat to server', function(data){
-    io.emit('chat to client', data); 
+    io.to(data.roomID).emit('chat to client', data);
   });
 
   // additional callbacks here
@@ -149,12 +176,90 @@ function createGrid(rows,columns){
   var newGrid = [];
   var newRow = []
   for(var i = 0; i < rows; i++){
-    for(var k = 0; k < cols; k++){
+    for(var k = 0; k < columns; k++){
       newRow.push(-1);
     }
     newGrid.push(newRow);
     newRow = [];
-    
+
   }
   return newGrid;
+}
+
+// instrument object
+function TBDinstrument(name, rows, cols, type){
+	this.rows = rows;
+	this.cols = cols;
+	this.name = name;
+  this.type = type;
+  if(type.rows){
+    this.rows = type.rows;
+  }
+  this.grid = createGrid(this.rows,cols);
+	this.clear = function(){
+		this.grid.forEach(function(row){
+      row.fill(-1);
+    });
+	}
+
+  this.reversex = function(){
+    for(i=0;i<this.grid.length;i++){
+      this.grid[i].reverse();
+    }
+  }
+
+  this.reversey = function(){
+    this.grid.reverse();
+  }
+	// Create the polarity grid for click/unclick
+
+}
+
+// session object
+function session(roomID,socket){
+  this.roomID = roomID;
+  this.users = [];
+  this.instruments = [];
+  this.tempo = 120;
+  this.created = 0;
+
+  // TODO: callback in script.js to receive sync - this does nothing right now
+  this.sync = function(){
+    io.to(this.roomID).emit('joinSession');
+  }
+
+  this.onConnection = function(socket){
+    // send session data to new connection
+    socket.emit('joinSession',
+      {
+        users: this.users,
+        instruments: this.instruments,
+        tempo: this.tempo,
+      });
+  }
+
+}
+
+// TODO: fix this up with everything you need for a personal edit history
+function user(username) {
+  // stuff like:
+  // this.undo
+  // this.redo
+  // this.private
+  // this.pushChanges
+}
+
+// check for sessions older than one day, executed on timer
+function checkSessionAge() {
+  for (i = sessions.length - 1; i >= 0; i --) {
+    if (new Date() - sessions[i].created > 86400000) {
+      console.log("Removing " + sessions[i].roomID + ", created at: " + new Date(sessions[i].created));
+      sessions.splice(i,1);
+      console.log(sessions.length + " sessions remain.")
+    }
+  }
+}
+
+function getIx(roomID){
+  return rooms.indexOf(roomID);
 }

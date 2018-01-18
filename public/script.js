@@ -2,64 +2,163 @@
 var socket = io();
 
 // initialize values
-var noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-var noteNumbers = [];
-for(var x = 0; x<noteNames.length;x++){
-	noteNumbers.push(x);
-}
 var rootNote = 40;
 var row, column;
-var thisRow;
-
-var columns = 32; 
-var lastCellLeft; 
-var twoCellsBack;
+var columns = 32;
+var lastCellLeft,twoCellsBack;
+var userThatClicked = false;
 var currentGridIndex = 0;
-var numInsts = 0;	
-var grids = [];
 var counter = 0;
 var tempo;
 var ix;
 var allRows;
 var selectedOutput;
-var outputArray = [];
-var instrumentOutputs = [];
-var currentNotes = [];
-var currentGrid;
-var blankCurNotes = [];
-
+var instruments = [];
 var searchIx;
+var type;
+var notesToPlay, notesToStop;
+var mousemode = 0;
 
+var roomID = -1;
+var username = "";
+var users = [];
+var currInst;
+
+function setup(){
+	frameRate(2);
+	noLoop();
+}
 
 //enable WebMIDI
 WebMidi.enable(function(err){
 	if(err){
 		alert("Uh oh! Looks like WebMidi failed. Some browsers don't support WebMIDI, try Firefox or Chrome!!");
 	}
-
 	//List the outputs
 	for(var i = 0; i < WebMidi.outputs.length;i++){
 		$('#output').append("<option>"+WebMidi.outputs[i].name+"</option>")
 	}
 
+	// Sets instrument MIDI outs
 	$('#output').change(function(){
 		selectedOutput = $('option:selected', this).index()-1;
 		if(selectedOutput < 0){
-		instrumentOutputs[currentGridIndex] = 0;
+		instruments[currentGridIndex].out = 0;
 		}else{
-		instrumentOutputs[currentGridIndex] = WebMidi.outputs[selectedOutput];
+		instruments[currentGridIndex].out = WebMidi.outputs[selectedOutput];
 		}
-
-		console.log(instrumentOutputs);
+		console.log(instruments.out);
 	})
-
-
-
-
 })
 
 // page interaction
 $(document).ready(function(){
+
+	// check for room joined by url
+	var url = window.location.href;
+
+	// case for local vs website
+	if (url.includes("www.tbd.zone")) {
+		// if a room is appended to base url, join that room
+		if (url.replace("http://www.tbd.zone/","") != "") {
+			// get the roomID from url string
+			roomID = url.replace("http://www.tbd.zone/","")
+			roomID = roomID.replace("/", "")
+
+			// send roomID to server for connection
+			socket.emit('room', {roomID: roomID});
+
+			// update chat label with roomID
+			var chatLabel = "In room: " + roomID;
+			$('#chatRoom').text(chatLabel);
+		}
+	} else {
+		// TODO: catch all for local network IPs -- take out after testing
+		var temp = url.split("").reverse();
+		roomID = temp.slice(0,temp.indexOf("/")).reverse().join("");
+
+		// send roomID to server for connection
+		socket.emit('room', {roomID: roomID});
+
+		// update chat label with roomID
+		var chatLabel = "In room: " + roomID;
+		$('#chatRoom').text(chatLabel);
+	}
+
+	// modal for room if none provided
+	if (roomID == "") {
+		// pick room and username
+	    $('#roomPicker').modal('show');
+	    $('#roomButton').click(function(e) {
+	        roomID = $("#roomName").val();
+
+					// send roomID to server for connection
+					socket.emit('room', {roomID: roomID});
+
+					// capture username, send to server for association to room
+					username = $('#username').val();
+					socket.emit('user',
+					{
+							roomID: roomID,
+							username: username
+					});
+
+					// update chat label with roomID
+					var chatLabel = "In room: " + roomID;
+					$('#chatRoom').text(chatLabel);
+	    });
+	// modal for username only if roomID came from url
+	} else {
+		// autofill room and pick username if room provided in url
+		$('#roomPicker').modal('show');
+		$('#greeting').text("Pick a username for the sesh!")
+		$('#roomName').hide();
+    $('#roomButton').click(function() {
+				// capture username, send to server for association to room
+				// TODO: check for usernme, only send if available
+				username = $('#username').val();
+				if (users.indexOf(username) == -1) {
+					console.log(users.indexOf(username) + ": username " + username + " available.");
+					socket.emit('user',
+					{
+							roomID: roomID,
+							username: username
+					});
+				} else {
+					// TODO: fix this, check for existing username doesn't show modal
+					console.log(users.indexOf(username) + ": username " + username + " not available.");
+					$('#roomPicker').modal('show');
+					$('#greeting').text("Sorry - somebody already took that name! Try another.");
+					$('#roomName').hide();
+				}
+    });
+	}
+
+	// get updated list of users after new member joins room
+	socket.on('update users', function(data){
+		users = data.users;
+		console.log(users);
+	});
+
+	// get current grid state from server
+	socket.on('joinSession',function(data){
+		// update instruments
+		if(data.instruments){
+			for (var h = 0; h < data.instruments.length;h++){
+				currInst = data.instruments[h];
+				instruments.push(new TBDgrid(currInst.name,currInst.rows,currInst.cols,currInst.type));
+				instruments[h].connection(currInst.grid,h);
+			}
+		}
+
+		// get current list of Users
+		users = data.users;
+
+		// TODO: get current tempo
+		showTab(instruments.length);
+		currentGridIndex = instruments.length-1;
+	});
+
 	// initial grid and mouse states
 	// var tweet = grid(rows, columns, $(".gridContainer"));
 	var mouseIsClicked = false;
@@ -69,207 +168,246 @@ $(document).ready(function(){
 	$(document).on("mouseleave",'.selected .grid',function(){
 		mouseIsClicked = false;
 	})
-
-
-
 	$(document).on("mousedown",'.selected .row .step',function(){
 		// track mouse state
 		mouseIsClicked = true;
-		// console.log("You're clicking");
-		
+
 		// toggle corresponding polarity grid cell
 		column = $(this).index();
 		row = $(this).parent().index();
-		
-		
+
 		// send step coordinates
 		socket.emit('step',{
 			row: row,
 			column: column,
-			inst: currentGridIndex
+			inst: currentGridIndex,
+			roomID: roomID
 		});
-	
 	// exit on unclick
 	}).on("mouseup",'.row .step',function(){
 		mouseIsClicked = false;
-	
 	// subsequent dragged cells
 	}).on("mouseleave",'.selected .row .step',function(){
 			// toggle corresponding polarity grid cell
 			if(mouseIsClicked){
-			if(lastCellLeft){
-				twoCellsBack = lastCellLeft;
-				$(".twoCellsBack").removeClass("twoCellsBack");
-			    $(".lastcell").toggleClass("twoCellsBack");
-				// console.log(twoCellsBack)
-			}
+				if(lastCellLeft){
+					twoCellsBack = lastCellLeft;
+					$(".twoCellsBack").removeClass("twoCellsBack");
 
-			column = $(this).index();
-			row = $(this).parent().index();
-			// console.log('You left:  ', column, row);
-			$(".lastcell").removeClass("lastcell");
-			lastCellLeft=$(this).toggleClass("lastcell");
+				  $(".lastcell").toggleClass("twoCellsBack");
+				}
+				column = $(this).index();
+				row = $(this).parent().index();
+				$(".lastcell").removeClass("lastcell");
+				lastCellLeft=$(this).toggleClass("lastcell");
 			}
-			// theGrid[row][column] =  theGrid[row][column] * -1;
-			
-			// // send step coordinates
-			//  socket.emit('step',{
-			// 	row: row,
-			//  	column: column
-		 // // });
 		}).on("mouseenter", '.selected .row .step',function(){
 		if(mouseIsClicked){
-
 			// toggle corresponding polarity grid cell
 			if($(this).hasClass("twoCellsBack")){
-				lastCellLeft.toggleClass("clicked")
-				
+				// lastCellLeft.toggleClass("clicked")
+				column = lastCellLeft.index();
+				row = lastCellLeft.parent().index();
+				socket.emit('step',{
+					row: row,
+					column: column,
+					inst: currentGridIndex,
+					roomID: roomID
+				});
 			}
-
 			column = $(this).index();
 			row = $(this).parent().index();
-			// console.log('You entered:  ',column,row)
-			
-			
+
 			// send step coordinates
+
+		if(mousemode === 1){
 			socket.emit('step',{
 				row: row,
 				column: column,
-				inst: currentGridIndex
+				inst: currentGridIndex,
+				roomID: roomID
 			});
+		}
+
+		if(!$(this).hasClass('clicked') &&  (mousemode === 0 || mousemode === 2)){
+			socket.emit('step',{
+				row: row,
+				column: column,
+				inst: currentGridIndex,
+				roomID: roomID
+			});
+		}
 		}
 	});
 
+	// update steps from all users
+	socket.on('stepreturn',function(data){
+		if(mousemode === 0){
+		$(".gridContainer:eq("+data.inst+") .row:eq("+data.row+") .step:eq("+data.column+")").toggleClass("clicked");
+		instruments[data.inst].poleGrid[data.row][data.column] *= -1;
+		instruments[data.inst].updateNotes(data.row,data.column);
+	}
+
+	if (mousemode === 1) {
+		$(".gridContainer:eq("+data.inst+") .row:eq("+data.row+") .step:eq("+data.column+")").removeClass("clicked");
+		instruments[data.inst].poleGrid[data.row][data.column] = -1;
+		instruments[data.inst].updateNotes(data.row,data.column);
+	}
+
+	if(mousemode === 2){
+		var maxCol = instruments[data.inst].poleGrid.length;
+		for (i = 0;i<3;i++){
+			console.log(data.row-2*i);
+			if((data.row - 2*i) > 0){
+				$(".gridContainer:eq("+data.inst+") .row:eq("+(data.row - (2*i))+") .step:eq("+data.column+")").toggleClass("clicked");
+				instruments[data.inst].poleGrid[data.row-(2*i)][data.column] *= -1;
+				instruments[data.inst].updateNotes(data.row-(2*i),data.column);
+				}
+			}
+		}
+
+	});
+
 	//The tab toggler
-	
-	$(document).on("click","ul.tabs li a",function(){	
+
+	$(document).on("click","ul.tabs li a",function(){
 		var tab_id = $(this).attr('data-tab');
 		// console.log(tab_id);
 		$('ul.tabs li a').removeClass('selected');
 		$('.tab-content').removeClass('selected');
 		currentGridIndex = $("ul.tabs li a").index(this)-1;
+		console.log(currentGridIndex);
 		$(this).addClass('selected');
 		$("#"+tab_id+"").addClass('selected');
 		if(!$('.tab-content').hasClass('selected')){
 		ix = $('.tab-link').index(this);
 		$('.tab-content:eq('+ix+')').addClass('selected')
-		
 		}
-		if(instrumentOutputs[currentGridIndex]){
-			$('#output').val(instrumentOutputs[currentGridIndex].name);
+		// This sets the output so the users knows that output on their current tab...
+		if(instruments[currentGridIndex] && currentGridIndex>0){
+			$('#output').val(instruments[currentGridIndex].out.name);
 		}else{
 			$('#output').val('Pick yr MIDI out!');
 		}
-		
+
 	});
 
-	// get current grid state from server
-	socket.on('connection',function(data){
-		
-	grids = data.grid;
-	if(grids){
-		for (var h = 0; h < grids.length;h++){
-			var thisGrid = grids[h];
-			for (var i = 0; i < thisGrid.length ; i++) {
-				for (var j = 0; j < columns; j++) {
-					if (grids[h][i][j] > 0) {
-						$(".gridContainer:eq("+h+") .row:eq("+i+") .step:eq("+j+")").toggleClass("clicked");
-						currentNotes[h][j].push(i+rootNote);
-					}
-				}
-			}
-		}
-	}
-	});
-
-	
 
 	// update style on '+' button
 	$('#plus').mousedown(function(){
 		$('.newInstrument').toggleClass("clicked");
+
 	});
+
+	$('.cancel').click(function(){
+		$('.newInstrument').toggleClass("clicked");
+		$('ul.tabs li a').removeClass('selected');
+		$('.tab-content').removeClass('selected');
+		$('ul.tabs li a:eq(1)').addClass('selected');
+		$('.tab-content:eq(1)').addClass('selected');
+
+	});
+
+
+//[drums,major,minor,blues,fullGrid,chords]
+	$("#presets").change(function(){
+		type = $('option:selected', this).index()-1;
+		if(type>0){
+		$('.preset-extras').show();
+		$('.inst').show();
+	}else{
+		$('.preset-extras').hide();
+		$('.inst').show();
+	}
+	});
+
+	$('#mousemode').change(function(){
+		$('.grid').removeClass('eraser');
+		mousemode = $('option:selected', this).index();
+		console.log(mousemode)
+		$('.grid').removeClass('eraser chord');
+		switch(mousemode){
+			case 0:
+			console.log("Pencil Mode");
+			break;
+			case 1:
+			$('.grid').addClass('eraser');
+			break;
+			case 2:
+			$('.grid').addClass('chord');
+			break;
+
+		}
+	})
+
 
 	// create new instance from user menu specs
 	$(".newInsButton").click(function(){
 		var instName = $("#insName").val();
 		var rowCount = $("#rowCount").val();
+		if(!rowCount){
+			rowCount = 12;
+		}
+		userThatClicked = true;
+
 		socket.emit('newInst',{
 			name: instName,
-			rowCount: rowCount
+			rows: rowCount,
+			type: presets[type],
+			roomID: roomID
 		});
-		// console.log("instName:  ", instName);
-		// console.log("rowCount:   ",rowCount);
 	});
 
 	socket.on('newInstReturn',function(data){
-		// console.log('rowCount:  ',data.rowCount,'name:  ', data.name);
-		$('ul.tabs li a').removeClass('selected');
-		$('.tab-content').removeClass('selected');
-		
-		//Create Tab
-		var newTab = '<li><a class="tab-link selected" data-tab="'+data.name+'">'+data.name+'  <input type="image" class="deletetab" src="littlex.png"></input></a></li>';
-		$('.tabs').append(newTab);
-
-		//Creating The New Grid
-		var newPane = $('<div class="tab-content selected" id="'+data.name+'"></div>');
-		
-		var gc = $('<div class="gridContainer"></div>').appendTo(newPane);
-		// 	console.log(gc);
-		var thisElement = $('.tab-content.current .gridContainer');
-		
-
-		var newGrid = grid(data.rowCount,columns,gc);
-		
-		// console.log('the new grid:   ',newGrid);
-
-		// gc.append(newGrid);
-		newPane.appendTo($('#tab-spot'));
-		currentGridIndex = numInsts;
-		numInsts++;
-		// console.log('from new inst:  ', currentGridIndex);
-		
-
+		currentGridIndex = instruments.length;
+		instruments.push(new TBDgrid(data.name,data.rows,columns,data.type));
+		if(userThatClicked){
+			$('ul.tabs li a').removeClass('selected');
+			$('.tab-content').removeClass('selected');
+			$('ul.tabs li a:eq('+instruments.length+')').addClass('selected');
+			$('.tab-content:eq('+instruments.length+')').addClass('selected');
+			userThatClicked = false;
+		}
 	});
 
 	// clear grid
+
 	$("#clearcurrent").click(function(){
-		socket.emit('clearcurrent',{inst: currentGridIndex});
+		socket.emit('clearcurrent',
+		{
+			inst: currentGridIndex,
+			roomID: roomID
+		});
 	});
 
 	$("#clearall").click(function(){
-		socket.emit('clearall')
+		socket.emit('clearall', {roomID: roomID})
 	})
 
 	// update grid on clear
 	socket.on('clearcurrentreturn', function(data){
-			$(".gridContainer:eq("+data.inst+")").find(".clicked").removeClass("clicked");
-			currentNotes[data.inst] = [];
-			for (var y = 0;y<columns;y++){
-			currentNotes[data.inst].push([]);	
-			}
-			grids = data.grids;
+		instruments[data.inst].clear(data.inst);
 	});
 
-	socket.on('clearallreturn', function(data){
-			$(".gridContainer").find(".clicked").removeClass("clicked");
-			console.log("Clear all");
-			grids = data.grids;
-			for(i=0;i<currentNotes.length;i++){
-				currentNotes[i] = [];
-				for (var y = 0;y<columns;y++){
-				currentNotes[i].push([]);	
-				}
-			}
+	socket.on('clearallreturn', function(){
+		for(var i = 0;i < instruments.length;i++){
+			instruments[i].clear(i);
+		}
 	});
 
 	$('#tempo').change(function(){
 		tempo = $(this).val()/60;
-		socket.emit('tempo',{tempo: tempo});
+		socket.emit('tempo',
+		{
+			tempo: tempo,
+			roomID: roomID
+		});
 	});
 
 	socket.on('temporeturn',function(data){
-		clock.frequency.value = data.tempo;
+		// clock.frequency.value = data.tempo;
 		$('#tempo').val(data.tempo*60);
+		frameRate(data.tempo);
 	});
 
 	$('#startstop').click(function(){
@@ -277,33 +415,48 @@ $(document).ready(function(){
 		if($(this).hasClass('started')){
 			$(this).text('STOP');
 			counter = 0;
-			clock.start();
+			// clock.start();
+			loop();
 		}else{
 			$(this).text('Start');
-			clock.stop();
+			// clock.stop();
+			noLoop();
 			$('.step').removeClass('current');
 
 		}
+	});
+
+	$('#reversex').click(function(){
+		socket.emit('reversex',
+		{
+			inst:currentGridIndex,
+			roomID:roomID
+		});
+	});
+
+	socket.on('reversexreturn',function(data){
+		instruments[data.inst].clear(data.inst);
+		instruments[data.inst].connection(data.grid,data.inst);
+		console.log('inst:  ',data.inst);
+		console.log('grid:  ', data.grid);
+	})
+
+	$('#reversey').click(function(){
+		socket.emit('reversey',
+		{
+			inst:currentGridIndex,
+			roomID:roomID
+		});
+	});
+
+	socket.on('reverseyreturn',function(data){
+		instruments[data.inst].clear(data.inst);
+		instruments[data.inst].connection(data.grid,data.inst);
 	})
 
 
 
-	
 
-	// update steps from all users
-	socket.on('stepreturn',function(data){	
-		$(".gridContainer:eq("+data.inst+") .row:eq("+data.row+") .step:eq("+data.column+")").toggleClass("clicked");
-		grids[data.inst][data.row][data.column] *= -1;
-		console.log(data.inst);
-		
-		if(grids[data.inst][data.row][data.column]>0){
-		currentNotes[data.inst][data.column].push(data.row + rootNote);
-		}else{
-		searchIx = currentNotes[data.inst][data.column].indexOf(data.row + rootNote);
-		currentNotes[data.inst][data.column].splice(searchIx,1);
-		}
-		// console.log('row:  ', data.row, 'column:  ', data.column);
-	})
 
 	// send a chat msg via click
 	$("#chatSend").click(function(){
@@ -323,18 +476,9 @@ $(document).ready(function(){
 
 	// receive msg and update list
 	socket.on('chat to client', function(data){
-	    $('.messages').append($('<li>').html('<i>' + data.username + ": " + '</i>' + data.message));	
+	    $('.messages').append($('<li>').html('<i>' + data.username + ": " + '</i>' + data.message));
 	});
 
-	// clear chat
-	// TODO: ONLY NEEDED UNTIL ROOMS //
-	$("#chatClear").click(function(){
-		socket.emit('chatClearSend');
-	});
-	socket.on('chatClearReturn', function(data){
-	    $('.messages').html('');	
-	});
-	
 	// min/max chat box
 	$("#minMax").click(function(){
 	    if($(this).html() == "-"){
@@ -351,43 +495,53 @@ $(document).ready(function(){
 	})
 
 	$(document).on('click','.deletetab',function(){
-		var tab_to_delete = $('.deletetab').index(this);
-		socket.emit('deletetab',{tab2delete: tab_to_delete});
+		var tab2delete = $('.deletetab').index(this);
+		socket.emit('deletetab',
+		{
+			tab2delete: tab2delete,
+			roomID: roomID
+		});
 	});
 
 	socket.on('deletereturn',function(data){
-		
 		ix = data.tab2delete+1;
-		
 		$('.tab-link:eq('+ix+')').parent().remove();
 		$('.tab-content:eq('+ix+')').remove();
-		
 		ix-=1;
-		console.log(ix);
-		grids.splice(ix,1);
-		currentNotes.splice(ix,1);
-
-		
+		instruments.splice(ix,1);
 		$('.tab-link:eq('+ix+')').addClass('selected');
 		$('.tab-content:eq('+ix+')').addClass('selected');
 	})
 
 });
 
-clock = new Tone.Clock(function(){
-	
-	$('.step').removeClass('current');
-	counter = this.ticks%columns;
-	allRows = $('.step:eq('+counter+')', '.row').toggleClass('current');
 
-	for(i=0;i<instrumentOutputs.length;i++){
-		if(instrumentOutputs[i]){
-			instrumentOutputs[i].playNote(currentNotes[i][counter],1);
-			instrumentOutputs[i].stopNote(currentNotes[i][counter],1,{time: '+500'});
+function draw(){
+	counter = frameCount%columns;
+	for(i=0;i<instruments.length;i++){
+		if (frameCount > 0){
+		notesToPlay = instruments[i].notes[counter].filter(function(val){
+		return instruments[i].notesToOff[counter].indexOf(val) == -1;
+		});
+		notesToStop = instruments[i].notesToOff[counter].filter(function(val){
+		return instruments[i].notes[counter].indexOf(val) == -1;
+		});
+		}else{
+			notesToPlay = instruments[i].notes[counter];
+		}
+		if(instruments[i].out && notesToPlay){
+			instruments[i].out.playNote(notesToPlay,1);
+		}
+		if(instruments[i].out && notesToStop){
+			instruments[i].out.stopNote(notesToStop,1);
 		}
 	}
-		// console.log(currentNotes);
-}, 2);
+	$('.step').removeClass('current');
+	allRows = $('.step:eq('+counter+')', '.row').toggleClass('current');
+}
+
+
+
 
 // message submit and tag search fn def
 function messageSubmit() {
@@ -395,89 +549,23 @@ function messageSubmit() {
 	var username = $('#username').val();
 	// message
 	var message = $('#chatInput').val()
-		
+
 	// sent plain chat to server
-	socket.emit('chat to server', 
+	socket.emit('chat to server',
 	{
 		username: username,
 		message: message,
+		roomID: roomID
 	});
 
     $('#chatInput').val('');
 }
 
+function showTab(index){
+	$('ul.tabs li a').removeClass('selected');
+	$('.tab-content').removeClass('selected');
+	$('ul.tabs li a:eq('+index+')').addClass('selected');
+	$('.tab-content:eq('+index+')').addClass('selected');
+}
+
 // grid creation function for init and new tabs
-
-
-
-
-
-
-
-
-function grid(rows, columns, element){
-	// initial values
-	var w = 100/columns;
-	var h = 100/rows;
-	var labels = $("<div class='gridlabels'></div>")
-	
-	
-	// create the column of labels
-	for(var i = 0; i < rows; i++){
-		thisNote = noteNames[i%noteNames.length];
-		thisOctave = Math.floor(i/noteNames.length);
-		var rowLabel = $("<div class='rowlabel'>"+thisNote+thisOctave+"</div>").appendTo(labels);		
-	}
-	element.append(labels);
-
-	// create the grid
-	var gr = $("<div class='grid'></div>")
-
-	for(var i = 0; i < rows; i++){
-		var row = $("<div class='row'></div>").appendTo(gr);
-		for(var k = 0; k < columns; k++){
-			row.append("<div class='step'></div>");
-		}
-	}
-	element.append(gr);
-
-	// size elements based pct for flexible resizing
-	gr.find(".row").css({
-		"height": h+"%"
-	});
-	
-	gr.find(".step").css({
-		"width": w+"%"
-	});
-	gr.parent().find(".rowlabel").css({
-	"height": h+"%"
-	});
-
-	// Create the polarity grid for click/unclick
-	grids.push(createGrid(rows,columns))
-	instrumentOutputs.push(0);
-	for (var y = 0;y<columns;y++){
-		blankCurNotes.push([]);	
-	}
-	currentNotes.push(blankCurNotes);
-	blankCurNotes = [];
-	
-
-	// return completed grid
-	return gr;
-}
-
-function createGrid(rows,columns){
-  var newGrid = [];
-  var newRow = []
-  for(var i = 0; i < rows; i++){
-    for(var k = 0; k < columns; k++){
-      newRow.push(-1);
-    }
-    newGrid.push(newRow);
-    newRow = [];
-    
-  }
-  return newGrid;
-}
-
