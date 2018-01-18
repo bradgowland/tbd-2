@@ -15,13 +15,18 @@ var roomIndex = -1;
 app.use(express.static('public'));
 
 // dynamic url for rooms
-// test
 app.get('/', function(req, res){
   res.sendFile(__dirname + '/public/index.html')
 });
 app.get('/:dynamicroute', function(req,res) {
   res.sendFile(__dirname + '/public/app.html')
 });
+
+// check session age every minute, remove rooms older than 1 day
+setInterval(function() {
+  console.log("Checking for timed-out sessions at current time ", new Date())
+  checkSessionAge();
+}, 3600000);
 
 io.on('connection', function(socket){
   // connection console check
@@ -48,7 +53,6 @@ io.on('connection', function(socket){
         console.log('We found ',roomID);
     } else {
       rooms.push(roomID);
-
       console.log('Creating ', roomID);
 
       roomIndex = sessions.push(new session(roomID,socket));
@@ -62,6 +66,8 @@ io.on('connection', function(socket){
       }));
       sessions[roomIndex].onConnection(socket);
     }
+    sessions[getIx(roomID)].created = new Date();
+    console.log("New room created at ", new Date(sessions[getIx(roomID)].created))
   });
 
   // add user to session by roomID
@@ -215,18 +221,20 @@ function session(roomID,socket){
   this.users = [];
   this.instruments = [];
   this.tempo = 120;
+  this.created = 0;
 
+  // TODO: callback in script.js to receive sync - this does nothing right now
   this.sync = function(){
-    // TODO: callback in script.js to receive sync
     io.to(this.roomID).emit('joinSession');
   }
+
   this.onConnection = function(socket){
-    // TODO: fill in all data to send
+    // send session data to new connection
     socket.emit('joinSession',
       {
         users: this.users,
         instruments: this.instruments,
-        tempo: this.tempo
+        tempo: this.tempo,
       });
   }
 
@@ -239,6 +247,17 @@ function user(username) {
   // this.redo
   // this.private
   // this.pushChanges
+}
+
+// check for sessions older than one day, executed on timer
+function checkSessionAge() {
+  for (i = sessions.length - 1; i >= 0; i --) {
+    if (new Date() - sessions[i].created > 86400000) {
+      console.log("Removing " + sessions[i].roomID + ", created at: " + new Date(sessions[i].created));
+      sessions.splice(i,1);
+      console.log(sessions.length + " sessions remain.")
+    }
+  }
 }
 
 function getIx(roomID){

@@ -125,6 +125,7 @@ $(document).ready(function(){
 							username: username
 					});
 				} else {
+					// TODO: fix this, check for existing username doesn't show modal
 					console.log(users.indexOf(username) + ": username " + username + " not available.");
 					$('#roomPicker').modal('show');
 					$('#greeting').text("Sorry - somebody already took that name! Try another.");
@@ -152,11 +153,10 @@ $(document).ready(function(){
 
 		// get current list of Users
 		users = data.users;
-    
+
 		// TODO: get current tempo
 		showTab(instruments.length);
 		currentGridIndex = instruments.length-1;
-	}
 	});
 
 	// initial grid and mouse states
