@@ -65,9 +65,11 @@ io.on('connection', function(socket){
       	melodic: 1
       }));
       sessions[roomIndex].onConnection(socket);
+
+      // get created time
+      sessions[getIx(roomID)].created = new Date();
+      console.log("New room created at ", new Date(sessions[getIx(roomID)].created))
     }
-    sessions[getIx(roomID)].created = new Date();
-    console.log("New room created at ", new Date(sessions[getIx(roomID)].created))
   });
 
   // add user to session by roomID
@@ -160,7 +162,18 @@ io.on('connection', function(socket){
 
   // msg to all users
   socket.on('chat to server', function(data){
+    // distribute message
     io.to(data.roomID).emit('chat to client', data);
+
+    // update stored chat history in session, max 50 messages
+    if (sessions[getIx(data.roomID)].messages.length < 100) {
+      sessions[getIx(data.roomID)].messages.push(data.username);
+      sessions[getIx(data.roomID)].messages.push(data.message);
+    } else {
+      sessions[getIx(data.roomID)].messages.splice(0,2);
+      sessions[getIx(data.roomID)].messages.push(data.username);
+      sessions[getIx(data.roomID)].messages.push(data.message);
+    }
   });
 
   // additional callbacks here
@@ -222,6 +235,7 @@ function session(roomID,socket){
   this.instruments = [];
   this.tempo = 120;
   this.created = 0;
+  this.messages = [];
 
   // TODO: callback in script.js to receive sync - this does nothing right now
   this.sync = function(){
@@ -231,11 +245,20 @@ function session(roomID,socket){
   this.onConnection = function(socket){
     // send session data to new connection
     socket.emit('joinSession',
+    {
+      users: this.users,
+      instruments: this.instruments,
+      tempo: this.tempo,
+    });
+    // update recent chat history for new connection
+    for (i = 0; i < this.messages.length; i+=2) {
+      io.to(this.roomID).emit('chat history',
       {
-        users: this.users,
-        instruments: this.instruments,
-        tempo: this.tempo,
+        username: this.messages[i],
+        message: this.messages[i+1],
+        roomID: this.roomID
       });
+    }
   }
 
 }

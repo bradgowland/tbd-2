@@ -23,6 +23,7 @@ var roomID = -1;
 var username = "";
 var users = [];
 var currInst;
+var refreshHistory = 1;
 
 function setup(){
 	frameRate(2);
@@ -472,11 +473,17 @@ $(document).ready(function(){
 		}
 	});
 
-
-
 	// receive msg and update list
 	socket.on('chat to client', function(data){
-	    $('.messages').append($('<li>').html('<i>' + data.username + ": " + '</i>' + data.message));
+			refreshHistory = 0;
+			$('.messages').append($('<li>').html('<i>' + data.username + ": " + '</i>' + data.message));
+	});
+
+	// update chat history for new connection
+	socket.on('chat history', function(data){
+			if (refreshHistory) {
+				$('.messages').append($('<li>').html('<i>' + data.username + ": " + '</i>' + data.message));
+			}
 	});
 
 	// min/max chat box
