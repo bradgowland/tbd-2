@@ -9,6 +9,8 @@ var instrumentArray = [];
 var sessions = [];
 // names of all rooms
 var rooms = [];
+// session activity logs for all rooms
+var logs = [];
 var roomID = "";
 var roomIndex = -1;
 
@@ -17,6 +19,10 @@ app.use(express.static('public'));
 // dynamic url for rooms
 app.get('/', function(req, res){
   res.sendFile(__dirname + '/public/index.html')
+});
+// page to retrieve activity logs
+app.get('/logs', function(req,res) {
+  res.send(logs)
 });
 app.get('/:dynamicroute', function(req,res) {
   res.sendFile(__dirname + '/public/app.html')
@@ -51,6 +57,7 @@ io.on('connection', function(socket){
     if (roomIndex > -1) {
         sessions[roomIndex].onConnection(socket);
         console.log('We found ',roomID);
+        logs[roomIndex].createLog("User accessed existing room.")
     } else {
       rooms.push(roomID);
       console.log('Creating ', roomID);
@@ -68,7 +75,11 @@ io.on('connection', function(socket){
 
       // get created time
       sessions[getIx(roomID)].created = new Date();
-      console.log("New room created at ", new Date(sessions[getIx(roomID)].created))
+      console.log("New room created at ", new Date(sessions[getIx(roomID)].created));
+
+      // create session log object and log initial event
+      logs.push(new log(roomID));
+      logs[roomIndex].createLog("Created room.");
     }
   });
 
@@ -80,12 +91,13 @@ io.on('connection', function(socket){
     // find room, add user
     roomIndex = rooms.indexOf(roomID);
     sessions[roomIndex].users.push(username);
+    logs[roomIndex].createLog("New user.");
 
     // send full user list to all users in rooms
     io.to(data.roomID).emit('update users', {users: sessions[roomIndex].users});
 
     // console check
-    console.log("Users in ", roomID, ": ", sessions[roomIndex].users)
+    console.log("Users in ", roomID, ": ", sessions[roomIndex].users);
   });
 
   // distribute user step changes
@@ -93,12 +105,15 @@ io.on('connection', function(socket){
     sessions[getIx(data.roomID)].instruments[data.inst].grid[data.row][data.column] *= -1;
     // send step to clients
     io.to(data.roomID).emit('stepreturn', data);
+    // log event
+    logs[getIx(data.roomID)].createLog("Step change.");
   });
 
   // create new instrument and correstponding grid
   socket.on('newInst',function(data){
     io.to(data.roomID).emit('newInstReturn', data);
     sessions[getIx(data.roomID)].instruments.push(new TBDinstrument(data.name,data.rows,32,data.type));
+    logs[getIx(data.roomID)].createLog("New instrument.");
   });
 
   // delete instrument
@@ -106,6 +121,7 @@ io.on('connection', function(socket){
     sessions[getIx(data.roomID)].instruments.splice(data.tab2delete,1);
     console.log('Delete the ',data.tab2delete);
     io.to(data.roomID).emit('deletereturn',data);
+    logs[getIx(data.roomID)].createLog("Deleted instrument.");
   })
 
   // clear grid contents
@@ -116,6 +132,7 @@ io.on('connection', function(socket){
     io.emit('clearcurrentreturn',{
       inst: data.inst,
     });
+    logs[getIx(data.roomID)].createLog("Grid cleared.");
   });
 
   socket.on('clearall', function(data){
@@ -127,6 +144,8 @@ io.on('connection', function(socket){
 
     // send clear messagw to clients
     io.to(data.roomID).emit('clearallreturn');
+
+    logs[getIx(data.roomID)].createLog("All grids cleared.");
   });
 
 
@@ -134,6 +153,7 @@ io.on('connection', function(socket){
   socket.on('tempo', function(data){
     sessions[getIx(data.roomID)].tempo = data.tempo*60;
     io.to(data.roomID).emit('temporeturn', data);
+    logs[getIx(data.roomID)].createLog("Tempo changed.");
   })
 
   socket.on('reversex',function(data){
@@ -143,8 +163,8 @@ io.on('connection', function(socket){
     {
       inst:data.inst,
       grid:sessions[getIx(data.roomID)].instruments[data.inst].grid
-
     });
+    logs[getIx(data.roomID)].createLog("X axis revesed.");
   });
 
   socket.on('reversey',function(data){
@@ -154,8 +174,8 @@ io.on('connection', function(socket){
     {
       inst:data.inst,
       grid:sessions[getIx(data.roomID)].instruments[data.inst].grid
-
     });
+    logs[getIx(data.roomID)].createLog("Y axis revesed.");
   });
 
 
@@ -174,6 +194,7 @@ io.on('connection', function(socket){
       sessions[getIx(data.roomID)].messages.push(data.username);
       sessions[getIx(data.roomID)].messages.push(data.message);
     }
+    logs[getIx(data.roomID)].createLog("Chat sent.");
   });
 
   // additional callbacks here
@@ -229,7 +250,7 @@ function TBDinstrument(name, rows, cols, type){
 }
 
 // session object
-function session(roomID,socket){
+function session(roomID, socket){
   this.roomID = roomID;
   this.users = [];
   this.instruments = [];
@@ -260,7 +281,15 @@ function session(roomID,socket){
       });
     }
   }
+}
 
+// activity log object
+function log(roomID) {
+  this.roomID = roomID;
+  this.activity = [];
+  this.createLog = function(type) {
+    this.activity.push(new Date + ": " + type);
+  }
 }
 
 // TODO: fix this up with everything you need for a personal edit history
@@ -272,12 +301,14 @@ function user(username) {
   // this.pushChanges
 }
 
-// check for sessions older than one day, executed on timer
+// check for sessions older than five days, executed on timer
 function checkSessionAge() {
   for (i = sessions.length - 1; i >= 0; i --) {
-    if (new Date() - sessions[i].created > 86400000) {
+    if (new Date() - sessions[i].created > 86400000 * 5) {
       console.log("Removing " + sessions[i].roomID + ", created at: " + new Date(sessions[i].created));
       sessions.splice(i,1);
+      rooms.splice(i,1);
+      logs.splice(i,1);
       console.log(sessions.length + " sessions remain.")
     }
   }
