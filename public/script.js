@@ -24,8 +24,10 @@ var roomID = -1;
 var username = "";
 var users = [];
 var currInst;
+var refreshHistory = 1;
 var shifted;
 var start, $start;
+
 
 function setup(){
 	frameRate(8);
@@ -124,6 +126,7 @@ $(document).ready(function(){
 							username: username
 					});
 				} else {
+					// TODO: fix this, check for existing username doesn't show modal
 					console.log(users.indexOf(username) + ": username " + username + " not available.");
 					$('#roomPicker').modal('show');
 					$('#greeting').text("Sorry - somebody already took that name! Try another.");
@@ -467,11 +470,17 @@ $(document).ready(function(){
 		}
 	});
 
-
-
 	// receive msg and update list
 	socket.on('chat to client', function(data){
-	    $('.messages').append($('<li>').html('<i>' + data.username + ": " + '</i>' + data.message));
+			refreshHistory = 0;
+			$('.messages').append($('<li>').html('<i>' + data.username + ": " + '</i>' + data.message));
+	});
+
+	// update chat history for new connection
+	socket.on('chat history', function(data){
+			if (refreshHistory) {
+				$('.messages').append($('<li>').html('<i>' + data.username + ": " + '</i>' + data.message));
+			}
 	});
 
 	// min/max chat box
