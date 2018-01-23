@@ -18,14 +18,17 @@ var searchIx;
 var type;
 var notesToPlay, notesToStop;
 var mousemode = 0;
-
+var reversing = false;
+var beatDuration = 500;
 var roomID = -1;
 var username = "";
 var users = [];
 var currInst;
+var shifted;
+var start, $start;
 
 function setup(){
-	frameRate(2);
+	frameRate(8);
 	noLoop();
 }
 
@@ -53,10 +56,8 @@ WebMidi.enable(function(err){
 
 // page interaction
 $(document).ready(function(){
-
 	// check for room joined by url
 	var url = window.location.href;
-
 	// case for local vs website
 	if (url.includes("www.tbd.zone")) {
 		// if a room is appended to base url, join that room
@@ -64,10 +65,8 @@ $(document).ready(function(){
 			// get the roomID from url string
 			roomID = url.replace("http://www.tbd.zone/","")
 			roomID = roomID.replace("/", "")
-
 			// send roomID to server for connection
 			socket.emit('room', {roomID: roomID});
-
 			// update chat label with roomID
 			var chatLabel = "In room: " + roomID;
 			$('#chatRoom').text(chatLabel);
@@ -115,7 +114,7 @@ $(document).ready(function(){
 		$('#roomName').hide();
     $('#roomButton').click(function() {
 				// capture username, send to server for association to room
-				// TODO: check for usernme, only send if available
+				// TODO: check for username, only send if available
 				username = $('#username').val();
 				if (users.indexOf(username) == -1) {
 					console.log(users.indexOf(username) + ": username " + username + " available.");
@@ -152,120 +151,116 @@ $(document).ready(function(){
 
 		// get current list of Users
 		users = data.users;
-    
+
 		// TODO: get current tempo
 		showTab(instruments.length);
 		currentGridIndex = instruments.length-1;
-	}
+
 	});
 
 	// initial grid and mouse states
 	// var tweet = grid(rows, columns, $(".gridContainer"));
 	var mouseIsClicked = false;
-	var stepEntered = false;
-
 	// cell click
 	$(document).on("mouseleave",'.selected .grid',function(){
 		mouseIsClicked = false;
 	})
+
 	$(document).on("mousedown",'.selected .row .step',function(){
 		// track mouse state
 		mouseIsClicked = true;
-
-		// toggle corresponding polarity grid cell
-		column = $(this).index();
 		row = $(this).parent().index();
-
+		column = $(this).index();
 		// send step coordinates
 		socket.emit('step',{
 			row: row,
 			column: column,
 			inst: currentGridIndex,
-			roomID: roomID
+			roomID: roomID,
+			mousemode: mousemode,
+			user: username,
+			onoff: 'on',
 		});
 	// exit on unclick
-	}).on("mouseup",'.row .step',function(){
-		mouseIsClicked = false;
-	// subsequent dragged cells
-	}).on("mouseleave",'.selected .row .step',function(){
+}).on("mouseleave",'.selected .step',function(){
 			// toggle corresponding polarity grid cell
 			if(mouseIsClicked){
 				if(lastCellLeft){
 					twoCellsBack = lastCellLeft;
 					$(".twoCellsBack").removeClass("twoCellsBack");
-
 				  $(".lastcell").toggleClass("twoCellsBack");
 				}
-				column = $(this).index();
-				row = $(this).parent().index();
+				// column = $(this).index();
 				$(".lastcell").removeClass("lastcell");
 				lastCellLeft=$(this).toggleClass("lastcell");
 			}
 		}).on("mouseenter", '.selected .row .step',function(){
-		if(mouseIsClicked){
+		if(mouseIsClicked && $(this).index()!=column){
 			// toggle corresponding polarity grid cell
 			if($(this).hasClass("twoCellsBack")){
-				// lastCellLeft.toggleClass("clicked")
+				reversing = true;
 				column = lastCellLeft.index();
-				row = lastCellLeft.parent().index();
 				socket.emit('step',{
 					row: row,
 					column: column,
 					inst: currentGridIndex,
-					roomID: roomID
+					roomID: roomID,
+					mousemode: mousemode,
+					user: username,
+					shifted: shifted
 				});
 			}
 			column = $(this).index();
-			row = $(this).parent().index();
+			// row = $(this).parent().index();
 
 			// send step coordinates
 
 		if(mousemode === 1){
+			row = $(this).parent().index();
 			socket.emit('step',{
 				row: row,
 				column: column,
 				inst: currentGridIndex,
-				roomID: roomID
+				roomID: roomID,
+				mousemode: mousemode,
+				user: username,
+				shifted: shifted
 			});
 		}
 
-		if(!$(this).hasClass('clicked') &&  (mousemode === 0 || mousemode === 2)){
+		if(mousemode === 0 || mousemode === 2){
 			socket.emit('step',{
 				row: row,
 				column: column,
 				inst: currentGridIndex,
-				roomID: roomID
+				roomID: roomID,
+				mousemode: mousemode,
+				user: username,
+				shifted: shifted
 			});
 		}
 		}
+
+	}).on("mouseup",'.row .step',function(){
+		mouseIsClicked = false;
+		reversing = false;
+		$('.step').removeClass('twoCellsBack lastcell')
+		column = $(this).index();
+		socket.emit('step',{
+			row: row,
+			column: column,
+			inst: currentGridIndex,
+			roomID: roomID,
+			mousemode: mousemode,
+			user: username,
+			onoff: 'off',
+		});
+	// subsequent dragged cells
 	});
 
 	// update steps from all users
 	socket.on('stepreturn',function(data){
-		if(mousemode === 0){
-		$(".gridContainer:eq("+data.inst+") .row:eq("+data.row+") .step:eq("+data.column+")").toggleClass("clicked");
-		instruments[data.inst].poleGrid[data.row][data.column] *= -1;
-		instruments[data.inst].updateNotes(data.row,data.column);
-	}
-
-	if (mousemode === 1) {
-		$(".gridContainer:eq("+data.inst+") .row:eq("+data.row+") .step:eq("+data.column+")").removeClass("clicked");
-		instruments[data.inst].poleGrid[data.row][data.column] = -1;
-		instruments[data.inst].updateNotes(data.row,data.column);
-	}
-
-	if(mousemode === 2){
-		var maxCol = instruments[data.inst].poleGrid.length;
-		for (i = 0;i<3;i++){
-			console.log(data.row-2*i);
-			if((data.row - 2*i) > 0){
-				$(".gridContainer:eq("+data.inst+") .row:eq("+(data.row - (2*i))+") .step:eq("+data.column+")").toggleClass("clicked");
-				instruments[data.inst].poleGrid[data.row-(2*i)][data.column] *= -1;
-				instruments[data.inst].updateNotes(data.row-(2*i),data.column);
-				}
-			}
-		}
-
+		stepReturn(data);
 	});
 
 	//The tab toggler
@@ -307,7 +302,10 @@ $(document).ready(function(){
 		$('.tab-content:eq(1)').addClass('selected');
 
 	});
-
+	$(document).on('keyup keydown', function(e){
+		shifted = e.shiftKey;
+		alted = e.altKey;
+	});
 
 //[drums,major,minor,blues,fullGrid,chords]
 	$("#presets").change(function(){
@@ -396,7 +394,7 @@ $(document).ready(function(){
 	});
 
 	$('#tempo').change(function(){
-		tempo = $(this).val()/60;
+		tempo = $(this).val()/15;
 		socket.emit('tempo',
 		{
 			tempo: tempo,
@@ -406,7 +404,8 @@ $(document).ready(function(){
 
 	socket.on('temporeturn',function(data){
 		// clock.frequency.value = data.tempo;
-		$('#tempo').val(data.tempo*60);
+		$('#tempo').val(data.tempo*15);
+		beatDuration = 1000*(60/(data.tempo*15));
 		frameRate(data.tempo);
 	});
 
@@ -453,10 +452,6 @@ $(document).ready(function(){
 		instruments[data.inst].clear(data.inst);
 		instruments[data.inst].connection(data.grid,data.inst);
 	})
-
-
-
-
 
 	// send a chat msg via click
 	$("#chatSend").click(function(){
@@ -520,14 +515,7 @@ function draw(){
 	counter = frameCount%columns;
 	for(i=0;i<instruments.length;i++){
 		if (frameCount > 0){
-		notesToPlay = instruments[i].notes[counter].filter(function(val){
-		return instruments[i].notesToOff[counter].indexOf(val) == -1;
-		});
-		notesToStop = instruments[i].notesToOff[counter].filter(function(val){
-		return instruments[i].notes[counter].indexOf(val) == -1;
-		});
-		}else{
-			notesToPlay = instruments[i].notes[counter];
+
 		}
 		if(instruments[i].out && notesToPlay){
 			instruments[i].out.playNote(notesToPlay,1);
@@ -567,5 +555,66 @@ function showTab(index){
 	$('ul.tabs li a:eq('+index+')').addClass('selected');
 	$('.tab-content:eq('+index+')').addClass('selected');
 }
+
+
+function stepReturn(data){
+var $step = $(".gridContainer:eq("+data.inst+") .row:eq("+data.row+") .step:eq("+data.column+")");
+if(data.onoff === 'off'){
+	$step.toggleClass('clicked');
+}
+if(data.column > 0){
+	var $left = $(".gridContainer:eq("+data.inst+") .row:eq("+data.row+") .step:eq("+(data.column-1)+")");
+}
+if(data.column < columns-1){
+	var $right = $(".gridContainer:eq("+data.inst+") .row:eq("+data.row+") .step:eq("+(data.column+1)+")");
+}
+if(data.onoff === 'on'){
+	 start = data.column;
+	 $start = $step;
+}
+
+if($step.hasClass('clicked')){
+	$step.removeClass('left right');
+	$right && $right.hasClass('clicked') ? $right.addClass('left'): $right = 0;
+	$left && $left.hasClass('clicked') ? $left.addClass('right'): $left = 0;
+
+}
+//For creating Blocks of varying lengths designates ends
+if(data.onoff === 'off'){
+	$step.toggleClass('clicked');
+	var end = data.column;
+	if (end > start){
+		$step.addClass('right');
+		$start.addClass('left');
+	}else if(end === start){
+		$step.addClass("right left");
+		$start = 0;
+	}else if(end < start) {
+		$step.addClass('left');
+		$step.removeClass('right');
+		$start.addClass('right');
+	}
+	//update notes in on off for the creation of blocks here!
+
+}else{
+	//for the dragged notes between on and offsets
+		$step.toggleClass("clicked");
+		// $step.removeClass('left right')
+}
+
+	if(!$step.hasClass('clicked')){
+		$step.removeClass('left right');
+	}
+
+
+
+	$left ? instruments[data.inst].updateNotes(data.inst,$left): console.log('$left');
+	$right ? instruments[data.inst].updateNotes(data.inst,$right): console.log('$right');
+	$start ? instruments[data.inst].updateNotes(data.inst,$start):console.log('$start');
+	instruments[data.inst].updateNotes(data.inst,$step);
+
+	}
+
+
 
 // grid creation function for init and new tabs
