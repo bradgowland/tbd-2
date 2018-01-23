@@ -24,24 +24,48 @@ function TBDgrid(name, rows, cols,type){
 		//uses the notes to create the note labels
 		for(i = 0;i < this.rows;i++){
 			this.type.labels.push(findNoteFromNumber(this.type.midiNotes[i]));
+
 		}
 	}
+
+
 	// this.createScale = function (this.type.midiNotes){
 
 	// }
 	// Gathers value to be sent to note off
-	this.updateNotes = function (row,col){
-		if(this.poleGrid[row][col]>0){
-		this.notes[col].push((type.midiNotes[rows-row-1]));
-		this.notesToOff[(col+1)%this.cols].push((type.midiNotes[rows-row-1]));
-
-		}else{
-		searchIx = this.notes[col].indexOf((type.midiNotes[rows-row-1]));
-		this.notes[col].splice(searchIx,1);
-		this.notesToOff[(col+1)%this.cols].splice(searchIx,1);
+	this.updateNotes = function (ix,$element){
+		var row = $element.parent().index();
+		var col = $element.index();
+		var thisMidiNote = type.midiNotes[rows-row-1];
+		if($element.hasClass('left')){
+			this.notes[col].push((thisMidiNote));
 		}
 
+		if($element.hasClass('right')){
+			this.notesToOff[(col+1)%columns].push(thisMidiNote);
+		}
+		// if
+		// 		searchIx = this.notes[col].indexOf((type.midiNotes[rows-row-1]));
+		// if(searchIx>-1){
+		// 		this.notes[col].splice(searchIx,1);
+		// 		this.notesToOff[(col+1)%this.cols].splice(searchIx,1);
+		// 	}
+
+
 	}
+
+
+
+	this.updateNoteOffs = function(ix,row,col){
+		var $thisStep = $('.gridContainer:eq('+ix+') .row:eq('+row+') .step:eq('+col+')');
+		var thisMidiNote = type.midiNotes[rows-row-1];
+		if(isAnOnset(ix,row,col)){
+			this.notes[col].push((type.midiNotes[rows-row-1]));
+		}
+
+
+}
+
 
 	this.connection = function(grid, index){
 		this.poleGrid = grid;
@@ -64,7 +88,7 @@ function TBDgrid(name, rows, cols,type){
 			this.notes.push([]);
 			this.notesToOff.push([]);
 		}
-		$(".gridContainer:eq("+ix+")").find(".clicked").removeClass("clicked");
+		$(".gridContainer:eq("+ix+")").find(".clicked").removeClass("clicked left right");
 
 	}
 
@@ -76,8 +100,8 @@ function TBDgrid(name, rows, cols,type){
 
 	// initial values
 
-	// $('ul.tabs li a').removeClass('selected');
-	// $('.tab-content').removeClass('selected');
+	$('ul.tabs li a').removeClass('selected');
+	$('.tab-content').removeClass('selected');
 		//Create Tab
 	//Creates the Instrument Tag Link
 	var newTab = '<li><a class="tab-link" data-tab="'+name+'">'+name+'  <input type="image" class="deletetab" src="littlex.png"></input></a></li>';
@@ -91,7 +115,12 @@ function TBDgrid(name, rows, cols,type){
 
 	// Setting flexible grid dimensions
 	var w = 100/columns;
-	var h = 100/this.rows;
+	var h;
+	if(this.rows > 40){
+		h = 5;
+	}else{
+	h = 100/this.rows;
+	}
 
 
 	//Creating the column of labels
@@ -109,11 +138,19 @@ function TBDgrid(name, rows, cols,type){
 
 	for(var i = 0; i < this.rows; i++){
 		var row = $("<div class='row'></div>").appendTo(gr);
+		if(this.type.labels[this.rows-i-1][1] === '#'){
+			row.addClass('sharp');
+		}
 		for(var k = 0; k < columns; k++){
 			row.append("<div class='step'></div>");
 		}
 	}
+
 	gc.append(gr);
+
+	if(this.rows > 40){
+		gc.addClass('fullgrid')
+	}
 
 	// size elements based pct for flexible resizing
 	gr.find(".row").css({
@@ -155,3 +192,32 @@ function findNoteFromNumber(num){
 	octave = Math.floor(num/12) - 1;
 	return theNote+octave;
 }
+
+function isAnOnset(ix,row,col){
+	var $thisStep = $('.gridContainer:eq('+ix+') .row:eq('+row+') .step:eq('+col+')');
+	if($thisStep.hasClass('left')){
+		return true;
+	}else{
+		return false;
+	}
+
+}
+
+function isAnOffset(ix,row,col){
+	var $thisStep = $('.gridContainer:eq('+ix+') .row:eq('+row+') .step:eq('+col+')');
+	if($thisStep.hasClass('right')){
+		return true;
+	}else{
+		return false;
+	}
+}
+
+function remove(note, array){
+	var index = array.indexOf(note);
+	if(index > -1){
+    array.splice(index, 1);
+	}
+	return array;
+}
+
+// $(".gridContainer:eq("+data.inst+") .row:eq("+data.row+") .step:eq("+data.column+")");
