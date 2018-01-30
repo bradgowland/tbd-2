@@ -16,6 +16,7 @@ var rooms = [];
 var logs = [];
 var roomID = "";
 var roomIndex = -1;
+var start;
 
 app.use(express.static('public'));
 
@@ -70,7 +71,7 @@ io.on('connection', function(socket){
 
       roomIndex = sessions.push(new session(roomID,socket));
       roomIndex -= 1;
-      sessions[roomIndex].instruments.push( new TBDinstrument('Default',20,32,{
+      sessions[roomIndex].instruments.push( new TBDinstrument('TBD',20,32,{
       	midiNotes: [],
       	scale: [0,2,4,5,7,9,11],
       	labels: [],
@@ -108,11 +109,35 @@ io.on('connection', function(socket){
 
   // distribute user step changes
   socket.on('step', function(data){
-    sessions[getIx(data.roomID)].instruments[data.inst].grid[data.row][data.column] *= -1;
+    if(data.start){
+      start = data.column;
+    }
+    if(data.mousemode === 2){
+      for(i=0;i<3;i++){
+        if(data.row >= 0){
+          sessions[getIx(data.roomID)].instruments[data.inst].grid[data.row][data.column] *= -1;
+          if(data.shifted){
+            data.mousemode = 3;
+          }else{
+            data.mousemode = 0;
+          }
+          io.to(data.roomID).emit('stepreturn', data);
+          data.row -= 2;
+        }
+      }
+    }else if(data.mousemode == 1){
+      sessions[getIx(data.roomID)].instruments[data.inst].grid[data.row][data.column] = -1;
+      io.to(data.roomID).emit('stepreturn', data);
+    }else{
+      sessions[getIx(data.roomID)].instruments[data.inst].grid[data.row][data.column] *= -1;
+      if(data.shifted){
+        data.mousemode = 3;
+      }
     // send step to clients
     io.to(data.roomID).emit('stepreturn', data);
     // log event
     logs[getIx(data.roomID)].createLog("Step change.");
+  }
   });
 
   // create new instrument and correstponding grid
@@ -126,6 +151,7 @@ io.on('connection', function(socket){
   socket.on('deletetab',function(data){
     sessions[getIx(data.roomID)].instruments.splice(data.tab2delete,1);
     console.log('Delete the ',data.tab2delete);
+    console.log(sessions[getIx(data.roomID)].instruments)
     io.to(data.roomID).emit('deletereturn',data);
     logs[getIx(data.roomID)].createLog("Deleted instrument.");
   })
@@ -235,7 +261,10 @@ function TBDinstrument(name, rows, cols, type){
   if(type.rows){
     this.rows = type.rows;
   }
+  // TODO: delete when we're done fixing up on/off grids
   this.grid = createGrid(this.rows,cols);
+  this.onGrid = createGrid(this.rows,cols);
+  this.offGrid = createGrid(this.rows,cols);
 	this.clear = function(){
 		this.grid.forEach(function(row){
       row.fill(-1);

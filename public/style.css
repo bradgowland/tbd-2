@@ -150,6 +150,22 @@ input {
 
 }
 
+.gridContainer.fullgrid{
+  overflow-y: scroll;
+  overflow-x: auto;
+}
+
+
+
+
+.gridContainer.fullgrid .gridlabels .rowlabel{
+  height:20px;
+  background-color: black;
+  color:white;
+
+
+}
+
 .grid.hidden{
     visibility: hidden;
 }
@@ -157,9 +173,9 @@ input {
 .gridlabels{
     float: left;
     justify-content: left;
-    height:inherit;
-    /*width:3%;*/
 
+    /*width:3%;*/
+    height:inherit;
     border-right: solid black 1px;
     font-size:unset;
     color:white;
@@ -173,6 +189,7 @@ input {
     line-height: 100%;
 
 }
+
 
 .messages {
     float: right;
@@ -188,6 +205,17 @@ input {
     -ms-flex-wrap: wrap;
     flex-wrap: wrap;
     margin: none;
+    background-color: white;
+}
+
+.row.sharp{
+  display: -ms-flexbox;
+  display: flex;
+  -ms-flex-wrap: wrap;
+  flex-wrap: wrap;
+  margin: none;
+  background-color: lightgrey;
+
 }
 
 .rowlabel{
@@ -210,7 +238,6 @@ input {
 	border-bottom: solid black 1px;
     border-right: solid black 1px;
 	opacity: 1;
-	background: white;
 	-webkit-user-select: none;  /* Chrome all / Safari all */
     -moz-user-select: none;     /* Firefox all */
     -ms-user-select: none;      /* IE 10+ */
@@ -221,14 +248,23 @@ input {
     display: inline-block;
 /*  height: 10px;
     width: 50px;*/
-    border: solid black 1px;
+    border-top: solid white 1px;
+    border-bottom:solid white 1px;
     opacity: 1;
     background: black;
-    transition: .4s background;
+    transition: .2s background;
     -webkit-user-select: none;  /* Chrome all / Safari all */
     -moz-user-select: none;     /* Firefox all */
     -ms-user-select: none;      /* IE 10+ */
     user-select: none;          /* Likely future */
+}
+
+.step.clicked.left{
+  border-left: solid white 2px;
+}
+
+.step.clicked.right{
+  border-right:solid white 2px;
 }
 
 .step.current{
