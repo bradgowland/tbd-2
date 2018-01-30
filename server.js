@@ -4,6 +4,9 @@ var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var normalizeSocket = require("normalize-port");
 var port = normalizeSocket(process.env.PORT || "8081");
+var mongodb = require('mongodb');
+var uri = 'mongodb://heroku_wzrt98pf:o60ajjk1lrsa5d23ohlf7auoes@ds117888.mlab.com:17888/heroku_wzrt98pf';
+
 var instrumentArray = [];
 // session objects
 var sessions = [];
@@ -21,6 +24,7 @@ app.get('/', function(req, res){
   res.sendFile(__dirname + '/public/index.html')
 });
 // page to retrieve activity logs
+// TODO: can be deleted if/when mongo replaces this
 app.get('/logs', function(req,res) {
   res.send(logs)
 });
@@ -28,11 +32,13 @@ app.get('/:dynamicroute', function(req,res) {
   res.sendFile(__dirname + '/public/app.html')
 });
 
-// check session age every minute, remove rooms older than 1 day
+// check each minute for cleaning up rooms older than 1 day, update db logs
 setInterval(function() {
   console.log("Checking for timed-out sessions at current time ", new Date())
   checkSessionAge();
-}, 3600000);
+  // TODO: not written
+  updateDB();
+}, 60000);
 
 io.on('connection', function(socket){
   // connection console check
@@ -312,6 +318,22 @@ function checkSessionAge() {
       console.log(sessions.length + " sessions remain.")
     }
   }
+}
+
+function updateDB() {
+  mongodb.MongoClient.connect(uri, function(err, db) {
+    if(err) throw err;
+
+    var dblogs = db.collection('logs');
+
+    dbLogs.insert(logs, function(err, result) {
+      if(err) throw err;
+    });
+
+    // clear out logs if successfully added to db
+    logs = [];
+    console.log('Logs successfully added to db.')
+  });
 }
 
 function getIx(roomID){
