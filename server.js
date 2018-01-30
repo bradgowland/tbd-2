@@ -350,19 +350,19 @@ function checkSessionAge() {
 }
 
 function updateDB() {
-  mongodb.MongoClient.connect(uri, function(err, db) {
-    if(err) throw err;
-
-    var dblogs = db.collection('logs');
-
-    dbLogs.insert(logs, function(err, result) {
-      if(err) throw err;
-    });
-
-    // clear out logs if successfully added to db
-    logs = [];
-    console.log('Logs successfully added to db.')
-  });
+  // mongodb.MongoClient.connect(uri, function(err, db) {
+  //   if(err) throw err;
+  //
+  //   var dblogs = db.collection('logs');
+  //
+  //   dbLogs.insert(logs, function(err, result) {
+  //     if(err) throw err;
+  //   });
+  //
+  //   // clear out logs if successfully added to db
+  //   logs = [];
+  //   console.log('Logs successfully added to db.')
+  // });
 }
 
 function getIx(roomID){
