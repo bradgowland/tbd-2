@@ -3,9 +3,16 @@ var noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 function TBDgrid(name, rows, cols,type){
 	this.rows = rows;
 	this.cols = cols;
+	this.thumb = 0;
 	this.name = name;
-	this.notes = [];
-	this.notesToOff = [];
+	this.notes = {
+		on: [],
+		off: []
+	}
+for(i = 0;i<columns;i++){
+ 	this.notes.on.push([]);
+ 	this.notes.off.push([]);
+ }
 	this.out=0;
 	this.type = type;
 	if(type.rows){
@@ -28,73 +35,90 @@ function TBDgrid(name, rows, cols,type){
 		}
 	}
 
-
-	// this.createScale = function (this.type.midiNotes){
-
-	// }
-	// Gathers value to be sent to note off
-	this.updateNotes = function (ix,$element){
-		var row = $element.parent().index();
-		var col = $element.index();
+	this.update = function($el){
+		var col = $el.index();
+		var row = $el.parent().index();
 		var thisMidiNote = type.midiNotes[rows-row-1];
-		if($element.hasClass('left')){
-			this.notes[col].push((thisMidiNote));
+		var onIx = this.notes.on[col].indexOf(thisMidiNote);
+		var offIx = this.notes.off[(col+1)%this.cols].indexOf((type.midiNotes[rows-row-1]));
+
+		if($el.hasClass('left') && $el.hasClass('right')){
+			if(onIx == -1){this.notes.on[col].push(thisMidiNote);}
+			if(offIx == -1){this.notes.off[(col+1)%columns].push(thisMidiNote);}
+		}else if($el.hasClass('left')){
+			if(onIx == -1){this.notes.on[col].push(thisMidiNote);}
+		}else if($el.hasClass('right')){
+			if(offIx == -1){this.notes.off[(col+1)%columns].push(thisMidiNote);}
+		}else{
+			if(onIx>-1){
+					this.notes.on[col].splice(onIx,1);
+			}
+			if(offIx>-1){
+					this.notes.off[(col+1)%this.cols].splice(offIx,1);
+			}
 		}
-
-		if($element.hasClass('right')){
-			this.notesToOff[(col+1)%columns].push(thisMidiNote);
-		}
-		// if
-		// 		searchIx = this.notes[col].indexOf((type.midiNotes[rows-row-1]));
-		// if(searchIx>-1){
-		// 		this.notes[col].splice(searchIx,1);
-		// 		this.notesToOff[(col+1)%this.cols].splice(searchIx,1);
-		// 	}
-
-
 	}
 
+	this.displayGrid = function(grid,index,thumb){
+		for (var j = 0; j<grid.length;j++){
+			for (var k = 0; k < columns; k++) {
+				var currCell = {
+					inst: index,
+					row: j,
+					column: k,
+					state: grid[j][k].state,
+					grid: thumb
+				}
+				stepReturn(currCell);
 
-
-	this.updateNoteOffs = function(ix,row,col){
-		var $thisStep = $('.gridContainer:eq('+ix+') .row:eq('+row+') .step:eq('+col+')');
-		var thisMidiNote = type.midiNotes[rows-row-1];
-		if(isAnOnset(ix,row,col)){
-			this.notes[col].push((type.midiNotes[rows-row-1]));
+	}
+}
+}
+this.gridReversed = function(grid,index,gridix){
+		for (var j = 0; j<grid.length;j++){
+			for (var k = 0; k < columns; k++) {
+				var currCell = {
+					inst: index,
+					row: j,
+					column: k,
+					state: grid[j][k].state,
+					grid: gridix
+				}
+				stepReturn(currCell);
+			}
 		}
-
-
 }
 
-
 	this.connection = function(grid, index){
-		this.poleGrid = grid;
 		for (var i = 0; i < grid.length ; i++) {
-				for (var j = 0; j < columns; j++) {
-					if (grid[i][j] > 0) {
-						$(".gridContainer:eq("+index+") .row:eq("+i+") .step:eq("+j+")").toggleClass("clicked");
-						this.notes[j].push((type.midiNotes[rows-i-1]));
-						this.notesToOff[(j+1)%this.cols].push((type.midiNotes[rows-i-1]));
+			var connection = i === 0 ? true:false;
+			for (var j = 0; j<grid[0].length;j++){
+				for (var k = 0; k < columns; k++) {
+					var currCell = {
+						inst: index,
+						row: j,
+						column: k,
+						state: grid[i][j][k].state,
+						grid: i,
+						connection: connection
+					}
+					stepReturn(currCell);
 					}
 				}
 			}
-	}
+		}
 
 	this.clear = function(ix){
-		this.poleGrid = createGrid(rows,columns);
-		this.notes = [];
-		this.notesToOff=[];
+		this.notes.on = [];
+		this.notes.off = [];
 		for(i = 0; i<columns; i++){
-			this.notes.push([]);
-			this.notesToOff.push([]);
+			this.notes.on.push([]);
+			this.notes.off.push([]);
 		}
 		$(".gridContainer:eq("+ix+")").find(".clicked").removeClass("clicked left right");
-
+		$(".little.selected").find(".clicked").removeClass("clicked");
 	}
 
-	this.clicked = function(row,col){
-		this.poleGrid[row][col]*=-1;
-	}
 
 
 
@@ -148,6 +172,7 @@ function TBDgrid(name, rows, cols,type){
 
 	gc.append(gr);
 
+
 	if(this.rows > 40){
 		gc.addClass('fullgrid')
 	}
@@ -160,16 +185,33 @@ function TBDgrid(name, rows, cols,type){
 	gr.find(".step").css({
 		"width": w+"%"
 	});
+
+	for(var i = 0 ; i < 3; i++){
+		var gridClone = gr.clone();
+		gc.append(gridClone);
+		gridClone.hide();
+	}
+
+	if(this.rows<39){
 	gr.parent().find(".rowlabel").css({
 	"height": h+"%"
 	});
-
-	// Create the polarity grid for click/unclick
-	this.poleGrid = createGrid(this.rows,columns);
-	for(i = 0;i<columns;i++){
-		this.notes.push([]);
-		this.notesToOff.push([]);
 	}
+	var lilGrid = gr.clone();
+	lilGrid.addClass('little');
+	var tr = $('.toprow')
+
+	lilGrid.find(".step").css({
+		"width": (Math.floor(w))+"%"
+	});
+
+	lilGrid.find(".step").addClass('stepthumb');
+	lilGrid.find(".stepthumb").removeClass('step');
+	var $thumbs = $("<div class='thumbs'></div>");
+	$thumbs.append(lilGrid);
+	for(var i = 0 ; i < 3; i++){$thumbs.append(lilGrid.clone());}
+	lilGrid.addClass('selected');
+	tr.append($thumbs);
 
 }
 

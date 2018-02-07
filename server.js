@@ -13,7 +13,9 @@ var rooms = [];
 var logs = [];
 var roomID = "";
 var roomIndex = -1;
-var start;
+var start = [];
+
+var userThatClicked = [];
 
 app.use(express.static('public'));
 
@@ -89,6 +91,7 @@ io.on('connection', function(socket){
     roomID = data.roomID;
     username = data.username;
 
+
     // find room, add user
     roomIndex = rooms.indexOf(roomID);
     sessions[roomIndex].users.push(username);
@@ -101,31 +104,97 @@ io.on('connection', function(socket){
     console.log("Users in ", roomID, ": ", sessions[roomIndex].users);
   });
 
+
+
   // distribute user step changes
   socket.on('step', function(data){
-    if(data.start){
-      start = data.column;
+    data.onleft = false;
+    data.onright = false;
+    // flipped = false;
+    if(data.state === 'on'){
+      userThatClicked.push(data.user);
+      console.log(' User '+data.user+'clicked ',data.column);
+      start.push(data.column);
     }
+
+    if(data.state === ''){
+      //left of this cell
+      if(data.column>0){
+      var left = sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state;
+        switch(left){
+          case 'sus':
+          sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state = 'off';
+          data.onleft = true;
+          break;
+          case 'on':
+          sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state = 'onoff';
+          data.onleft = true;
+          break;
+          default: data.onleft = false;
+        }
+      }
+
+      if(data.column < sessions[getIx(data.roomID)].instruments[data.inst].cols - 1){
+        var right = sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state;
+        switch(right){
+          case 'sus':
+          sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'on';
+          data.onright = true;
+          break;
+          case 'off':
+          sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'onoff';
+          data.onright = true;
+          break;
+          case 'onoff':
+          data.onright = true;
+          sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'onoff';
+          break;
+          default: data.onright = false;
+        }
+      }
+    }
+
+    if(data.state === 'off'){
+
+      var offix = userThatClicked.indexOf(data.user);
+      console.log(userThatClicked);
+      console.log('start:  ',start);
+      console.log(' User '+data.user+'unclicked ',data.column);
+
+      if(data.column === start[offix]){
+        data.state = 'onoff';
+      }else{
+        data.flipped = data.column < start[offix] ? true : false;
+        console.log('Flipped?:  ', data.flipped);
+        if(data.flipped){
+        sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][start[offix]].state = 'off';
+        }else{
+        sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][start[offix]].state = 'on';
+      }
+
+      }
+      userThatClicked.splice(offix,1);
+      start.splice(offix,1);
+    }
+    // console.log('Click State: ',data.state);
     if(data.mousemode === 2){
       for(i=0;i<3;i++){
         if(data.row >= 0){
-          sessions[getIx(data.roomID)].instruments[data.inst].grid[data.row][data.column] *= -1;
-          if(data.shifted){
-            data.mousemode = 3;
-          }else{
-            data.mousemode = 0;
-          }
+          sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = data.state;
+          data.mousemode = 0;
           io.to(data.roomID).emit('stepreturn', data);
           data.row -= 2;
         }
       }
-    }else if(data.mousemode == 1){
-      sessions[getIx(data.roomID)].instruments[data.inst].grid[data.row][data.column] = -1;
+    }else if(data.mousemode === 1){
+      data.state = '';
+      sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = data.state;
       io.to(data.roomID).emit('stepreturn', data);
     }else{
-      sessions[getIx(data.roomID)].instruments[data.inst].grid[data.row][data.column] *= -1;
-      if(data.shifted){
-        data.mousemode = 3;
+      if(data.flipped){
+      sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = 'on';
+      }else{
+      sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = data.state;
       }
     // send step to clients
     io.to(data.roomID).emit('stepreturn', data);
@@ -141,6 +210,11 @@ io.on('connection', function(socket){
     logs[getIx(data.roomID)].createLog("New instrument.");
   });
 
+  socket.on('getgrid',function(data){
+    data.grid = sessions[getIx(data.roomID)].instruments[data.inst].grid[data.gridix];
+  io.to(data.roomID).emit('getgridreturn', data);
+  })
+
   // delete instrument
   socket.on('deletetab',function(data){
     sessions[getIx(data.roomID)].instruments.splice(data.tab2delete,1);
@@ -153,7 +227,7 @@ io.on('connection', function(socket){
   // clear grid contents
   socket.on('clearcurrent', function(data){
     // clear current grid state
-    sessions[getIx(data.roomID)].instruments[data.inst].clear();
+    sessions[getIx(data.roomID)].instruments[data.inst].clear(data.gridix);
     // send clear message to clients
     io.emit('clearcurrentreturn',{
       inst: data.inst,
@@ -174,8 +248,6 @@ io.on('connection', function(socket){
     logs[getIx(data.roomID)].createLog("All grids cleared.");
   });
 
-
-
   socket.on('tempo', function(data){
     sessions[getIx(data.roomID)].tempo = data.tempo*60;
     io.to(data.roomID).emit('temporeturn', data);
@@ -183,25 +255,27 @@ io.on('connection', function(socket){
   })
 
   socket.on('reversex',function(data){
-    sessions[getIx(data.roomID)].instruments[data.inst].reversex();
-    console.log(sessions[getIx(data.roomID)].instruments[data.inst].grid);
+    sessions[getIx(data.roomID)].instruments[data.inst].reversex(data.gridix);
+    // console.log(sessions[getIx(data.roomID)].instruments[data.inst].grid);
     io.to(data.roomID).emit('reversexreturn',
     {
       inst:data.inst,
-      grid:sessions[getIx(data.roomID)].instruments[data.inst].grid
+      grid:sessions[getIx(data.roomID)].instruments[data.inst].grid[data.gridix],
+      gridix: data.gridix
     });
     logs[getIx(data.roomID)].createLog("X axis revesed.");
   });
 
   socket.on('reversey',function(data){
-    sessions[getIx(data.roomID)].instruments[data.inst].reversey();
+    sessions[getIx(data.roomID)].instruments[data.inst].reversey(data.gridix);
     console.log('Reversed the grid in '+data.roomID+'');
     io.to(data.roomID).emit('reverseyreturn',
     {
       inst:data.inst,
-      grid:sessions[getIx(data.roomID)].instruments[data.inst].grid
+      grid:sessions[getIx(data.roomID)].instruments[data.inst].grid[data.gridix],
+      gridix: data.gridix
     });
-    logs[getIx(data.roomID)].createLog("Y axis revesed.");
+    logs[getIx(data.roomID)].createLog("Y axis reversed.");
   });
 
 
@@ -237,7 +311,7 @@ function createGrid(rows,columns){
   var newRow = []
   for(var i = 0; i < rows; i++){
     for(var k = 0; k < columns; k++){
-      newRow.push(-1);
+      newRow.push(new step);
     }
     newGrid.push(newRow);
     newRow = [];
@@ -255,24 +329,28 @@ function TBDinstrument(name, rows, cols, type){
   if(type.rows){
     this.rows = type.rows;
   }
+  this.grid = [];
   // TODO: delete when we're done fixing up on/off grids
-  this.grid = createGrid(this.rows,cols);
-  this.onGrid = createGrid(this.rows,cols);
-  this.offGrid = createGrid(this.rows,cols);
-	this.clear = function(){
-		this.grid.forEach(function(row){
-      row.fill(-1);
-    });
-	}
+for(i=0;i<4;i++){
+  this.grid.push(createGrid(this.rows,cols));
+}
+this.clear = function(ix){
+    this.grid[ix] = createGrid(this.rows,cols);
+  }
 
-  this.reversex = function(){
-    for(i=0;i<this.grid.length;i++){
-      this.grid[i].reverse();
+  this.reversex = function(ix){
+    for(i=0;i<this.grid[ix].length;i++){
+      this.grid[ix][i].reverse();
+      for(j = 0;j<this.grid[ix][i].length;j++){
+        if(this.grid[ix][i][j].state === 'on' || this.grid[ix][i][j].state === 'off'){
+          this.grid[ix][i][j].state = this.grid[ix][i][j].state === 'on'? 'off':'on';
+        }
+      }
     }
   }
 
-  this.reversey = function(){
-    this.grid.reverse();
+  this.reversey = function(ix){
+    this.grid[ix].reverse();
   }
 	// Create the polarity grid for click/unclick
 
@@ -345,4 +423,8 @@ function checkSessionAge() {
 
 function getIx(roomID){
   return rooms.indexOf(roomID);
+}
+
+function step(){
+  this.state = '';
 }

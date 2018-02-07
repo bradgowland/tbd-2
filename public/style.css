@@ -159,23 +159,73 @@ input {
 
 
 .gridContainer.fullgrid .gridlabels .rowlabel{
-  height:20px;
   background-color: black;
+  height:20px;
   color:white;
+}
 
-
+.gridContainer.fullgrid .gridlabels {
+  height:auto;
 }
 
 .grid.hidden{
     visibility: hidden;
 }
 
+.toprow{
+  margin: 5px;
+  height:100px;
+  text-align: justify;
+}
+
+.bottomrow{
+  margin: 5px;
+  height:0px;
+}
+
+.grid.little{
+  height:100%;
+  width:20%;
+  padding:2px;
+  display:inline-block;
+  overflow: auto;
+  margin:5px;
+}
+.grid.little .step{
+border: 0px;
+}
+.grid.little.selected{
+border: solid black 3px;
+}
+
+.grid.little:hover{
+/* border: solid red 2px; */
+background-color:blue;
+opacity:0.5;
+z-index: 10;
+}
+
+.stepthumb.clicked{
+  background-color: black;
+}
+
+.thumbs{
+  display: none;
+}
+
+.thumbs.selected{
+  height:100px;
+  display:inherit;
+}
+
+
+
 .gridlabels{
     float: left;
     justify-content: left;
-
+    box-sizing:content-box;
     /*width:3%;*/
-    height:inherit;
+    height: inherit;
     border-right: solid black 1px;
     font-size:unset;
     color:white;
@@ -187,6 +237,7 @@ input {
     border-bottom: solid 1px white;
     text-align: center;
     line-height: 100%;
+    overflow: visible;
 
 }
 
@@ -221,7 +272,7 @@ input {
 .rowlabel{
     font-weight:700;
     font-style:italic;
-    border-top: solid 1px white;
+    border-bottom: solid 1px white;
     font-size:100%;
     -webkit-user-select: none;  /* Chrome all / Safari all */
     -moz-user-select: none;     /* Firefox all */
@@ -261,10 +312,12 @@ input {
 
 .step.clicked.left{
   border-left: solid white 2px;
+  cursor: crosshair;
 }
 
 .step.clicked.right{
   border-right:solid white 2px;
+  cursor: crosshair;
 }
 
 .step.current{
@@ -294,9 +347,11 @@ input {
 
 #chatWidnow{
     border:solid 1px;
-    float: right;
+    float: left;
     width: 40%;
     height: 250px;
+    margin:10px;
+
 }
 
 #title_bar{
