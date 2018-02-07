@@ -355,7 +355,8 @@ $(document).ready(function(){
 			name: instName,
 			rows: rowCount,
 			type: presets[type],
-			roomID: roomID
+			roomID: roomID,
+			user: username
 		});
 	});
 
@@ -377,12 +378,17 @@ $(document).ready(function(){
 		socket.emit('clearcurrent',
 		{
 			inst: currentGridIndex,
-			roomID: roomID
+			roomID: roomID,
+			user: username
 		});
 	});
 
 	$("#clearall").click(function(){
-		socket.emit('clearall', {roomID: roomID})
+		socket.emit('clearall',
+		{
+			roomID: roomID,
+			user: username
+		})
 	})
 
 	// update grid on clear
@@ -401,7 +407,8 @@ $(document).ready(function(){
 		socket.emit('tempo',
 		{
 			tempo: tempo,
-			roomID: roomID
+			roomID: roomID,
+			user: username
 		});
 	});
 
@@ -432,7 +439,8 @@ $(document).ready(function(){
 		socket.emit('reversex',
 		{
 			inst:currentGridIndex,
-			roomID:roomID
+			roomID:roomID,
+			user: username
 		});
 	});
 
@@ -447,7 +455,8 @@ $(document).ready(function(){
 		socket.emit('reversey',
 		{
 			inst:currentGridIndex,
-			roomID:roomID
+			roomID:roomID,
+			user: username
 		});
 	});
 
@@ -473,13 +482,13 @@ $(document).ready(function(){
 	// receive msg and update list
 	socket.on('chat to client', function(data){
 			refreshHistory = 0;
-			$('.messages').append($('<li>').html('<i>' + data.username + ": " + '</i>' + data.message));
+			$('.messages').append($('<li>').html('<i>' + data.user + ": " + '</i>' + data.message));
 	});
 
 	// update chat history for new connection
 	socket.on('chat history', function(data){
 			if (refreshHistory) {
-				$('.messages').append($('<li>').html('<i>' + data.username + ": " + '</i>' + data.message));
+				$('.messages').append($('<li>').html('<i>' + data.user + ": " + '</i>' + data.message));
 			}
 	});
 
@@ -503,7 +512,8 @@ $(document).ready(function(){
 		socket.emit('deletetab',
 		{
 			tab2delete: tab2delete,
-			roomID: roomID
+			roomID: roomID,
+			user: username
 		});
 	});
 
@@ -550,7 +560,7 @@ function messageSubmit() {
 	// sent plain chat to server
 	socket.emit('chat to server',
 	{
-		username: username,
+		user: username,
 		message: message,
 		roomID: roomID
 	});
