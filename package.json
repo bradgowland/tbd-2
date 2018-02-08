@@ -1,12 +1,16 @@
 {
-  "name": "test-project",
+  "name": "tbd-2",
   "version": "1.0.0",
-  "description": "A project to learn socket.IO",
+  "description": "The award winning step sequencer rides again.",
+  "engines": {
+    "node": "4.5.0"
+    "npm": "2.15.9"
+  }
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Ayush Gupta",
+  "author": "Brad Gowland & Dave Van Dusen",
   "license": "ISC",
   "dependencies": {
     "express": "^4.15.2",
