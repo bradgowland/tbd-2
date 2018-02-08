@@ -4,16 +4,15 @@ var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var normalizeSocket = require("normalize-port");
 var port = normalizeSocket(process.env.PORT || "8081");
-var mongodb = require('mongodb');
-var uri = 'mongodb://heroku_wzrt98pf:o60ajjk1lrsa5d23ohlf7auoes@ds117888.mlab.com:17888/heroku_wzrt98pf';
+const MongoClient = require('mongodb').MongoClient;
+const uri = 'mongodb://heroku_wzrt98pf:o60ajjk1lrsa5d23ohlf7auoes@ds117888.mlab.com:17888/heroku_wzrt98pf';
+const dbName = 'heroku_wzrt98pf';
 
 var instrumentArray = [];
 // session objects
 var sessions = [];
 // names of all rooms
 var rooms = [];
-// session activity logs for all rooms
-var logs = [];
 var roomID = "";
 var roomIndex = -1;
 var start;
@@ -24,22 +23,15 @@ app.use(express.static('public'));
 app.get('/', function(req, res){
   res.sendFile(__dirname + '/public/index.html')
 });
-// page to retrieve activity logs
-// TODO: can be deleted if/when mongo replaces this
-app.get('/logs', function(req,res) {
-  res.send(logs)
-});
 app.get('/:dynamicroute', function(req,res) {
   res.sendFile(__dirname + '/public/app.html')
 });
 
-// check each minute for cleaning up rooms older than 1 day, update db logs
+// check each hour for cleaning up rooms older than 1 day, update db logs
 setInterval(function() {
   console.log("Checking for timed-out sessions at current time ", new Date())
   checkSessionAge();
-  // TODO: not written
-  updateDB();
-}, 60000);
+}, 3600000);
 
 io.on('connection', function(socket){
   // connection console check
@@ -64,7 +56,7 @@ io.on('connection', function(socket){
     if (roomIndex > -1) {
         sessions[roomIndex].onConnection(socket);
         console.log('We found ',roomID);
-        logs[roomIndex].createLog("User accessed existing room.")
+        createLog(roomID, new Date(), "room accessed");
     } else {
       rooms.push(roomID);
       console.log('Creating ', roomID);
@@ -85,8 +77,7 @@ io.on('connection', function(socket){
       console.log("New room created at ", new Date(sessions[getIx(roomID)].created));
 
       // create session log object and log initial event
-      logs.push(new log(roomID));
-      logs[roomIndex].createLog("Created room.");
+      createLog(roomID, sessions[getIx(roomID)].created, "room created");
     }
   });
 
@@ -98,7 +89,7 @@ io.on('connection', function(socket){
     // find room, add user
     roomIndex = rooms.indexOf(roomID);
     sessions[roomIndex].users.push(username);
-    logs[roomIndex].createLog("New user.");
+    createLog(roomID, new Date(), "user added to room", username);
 
     // send full user list to all users in rooms
     io.to(data.roomID).emit('update users', {users: sessions[roomIndex].users});
@@ -136,7 +127,7 @@ io.on('connection', function(socket){
     // send step to clients
     io.to(data.roomID).emit('stepreturn', data);
     // log event
-    logs[getIx(data.roomID)].createLog("Step change.");
+    createLog(data.roomID, new Date(), "step change", data.user);
   }
   });
 
@@ -144,7 +135,7 @@ io.on('connection', function(socket){
   socket.on('newInst',function(data){
     io.to(data.roomID).emit('newInstReturn', data);
     sessions[getIx(data.roomID)].instruments.push(new TBDinstrument(data.name,data.rows,32,data.type));
-    logs[getIx(data.roomID)].createLog("New instrument.");
+    createLog(data.roomID, new Date(), "new isntrument", data.user);
   });
 
   // delete instrument
@@ -153,7 +144,7 @@ io.on('connection', function(socket){
     console.log('Delete the ',data.tab2delete);
     console.log(sessions[getIx(data.roomID)].instruments)
     io.to(data.roomID).emit('deletereturn',data);
-    logs[getIx(data.roomID)].createLog("Deleted instrument.");
+    createLog(data.roomID, new Date(), "deleted isntrument", data.user);
   })
 
   // clear grid contents
@@ -164,7 +155,7 @@ io.on('connection', function(socket){
     io.emit('clearcurrentreturn',{
       inst: data.inst,
     });
-    logs[getIx(data.roomID)].createLog("Grid cleared.");
+    createLog(data.roomID, new Date(), "grid cleared", data.user);
   });
 
   socket.on('clearall', function(data){
@@ -176,8 +167,7 @@ io.on('connection', function(socket){
 
     // send clear messagw to clients
     io.to(data.roomID).emit('clearallreturn');
-
-    logs[getIx(data.roomID)].createLog("All grids cleared.");
+    createLog(data.roomID, new Date(), "all grids cleared", data.user);
   });
 
 
@@ -185,7 +175,7 @@ io.on('connection', function(socket){
   socket.on('tempo', function(data){
     sessions[getIx(data.roomID)].tempo = data.tempo*60;
     io.to(data.roomID).emit('temporeturn', data);
-    logs[getIx(data.roomID)].createLog("Tempo changed.");
+    createLog(data.roomID, new Date(), "tempo changed", data.user);
   })
 
   socket.on('reversex',function(data){
@@ -196,7 +186,7 @@ io.on('connection', function(socket){
       inst:data.inst,
       grid:sessions[getIx(data.roomID)].instruments[data.inst].grid
     });
-    logs[getIx(data.roomID)].createLog("X axis revesed.");
+    createLog(data.roomID, new Date(), "x axis reversed", data.user);
   });
 
   socket.on('reversey',function(data){
@@ -207,7 +197,7 @@ io.on('connection', function(socket){
       inst:data.inst,
       grid:sessions[getIx(data.roomID)].instruments[data.inst].grid
     });
-    logs[getIx(data.roomID)].createLog("Y axis revesed.");
+    createLog(data.roomID, new Date(), "y axis reversed", data.user);
   });
 
 
@@ -219,14 +209,14 @@ io.on('connection', function(socket){
 
     // update stored chat history in session, max 50 messages
     if (sessions[getIx(data.roomID)].messages.length < 100) {
-      sessions[getIx(data.roomID)].messages.push(data.username);
+      sessions[getIx(data.roomID)].messages.push(data.user);
       sessions[getIx(data.roomID)].messages.push(data.message);
     } else {
       sessions[getIx(data.roomID)].messages.splice(0,2);
-      sessions[getIx(data.roomID)].messages.push(data.username);
+      sessions[getIx(data.roomID)].messages.push(data.user);
       sessions[getIx(data.roomID)].messages.push(data.message);
     }
-    logs[getIx(data.roomID)].createLog("Chat sent.");
+    createLog(data.roomID, new Date(), "chat sent", data.user);
   });
 
   // additional callbacks here
@@ -310,7 +300,7 @@ function session(roomID, socket){
     for (i = 0; i < this.messages.length; i+=2) {
       io.to(this.roomID).emit('chat history',
       {
-        username: this.messages[i],
+        user: this.messages[i],
         message: this.messages[i+1],
         roomID: this.roomID
       });
@@ -319,12 +309,12 @@ function session(roomID, socket){
 }
 
 // activity log object
-function log(roomID) {
+function log(roomID, timestamp, activity, user, _id) {
   this.roomID = roomID;
-  this.activity = [];
-  this.createLog = function(type) {
-    this.activity.push(new Date + ": " + type);
-  }
+  this.timestamp = timestamp;
+  this.activity = activity;
+  this.user = user;
+  this._id = _id;
 }
 
 // TODO: fix this up with everything you need for a personal edit history
@@ -343,28 +333,56 @@ function checkSessionAge() {
       console.log("Removing " + sessions[i].roomID + ", created at: " + new Date(sessions[i].created));
       sessions.splice(i,1);
       rooms.splice(i,1);
-      logs.splice(i,1);
       console.log(sessions.length + " sessions remain.")
     }
   }
 }
 
-function updateDB() {
-  // mongodb.MongoClient.connect(uri, function(err, db) {
-  //   if(err) throw err;
-  //
-  //   var dblogs = db.collection('logs');
-  //
-  //   dbLogs.insert(logs, function(err, result) {
-  //     if(err) throw err;
-  //   });
-  //
-  //   // clear out logs if successfully added to db
-  //   logs = [];
-  //   console.log('Logs successfully added to db.')
-  // });
+function createLog(roomID, timestamp, activity, user) {
+  // TODO: create unique ID
+  var _id = new Date();
+  _id = user + roomID + _id.getTime();
+  _id = Math.abs(_id.hashCode());
+
+  // create json formatted log
+  var newLog = new log(roomID, timestamp, activity, user, _id)
+
+  // connect to db server
+  MongoClient.connect(uri, function(err, client) {
+    if(err) throw err;
+
+    const db = client.db(dbName);
+    const collection = db.collection('tbd-logs');
+
+    // TODO: "duplicate key error"
+    try {
+      collection.insertOne(newLog, function(err, result) {
+        if(err) throw err;
+      });
+    } catch (err) {
+      console.log("An error occurred accessing the database.");
+      console.log(err);
+    }
+
+    // clear out logs and close connection if successful
+    client.close();
+  });
 }
 
 function getIx(roomID){
   return rooms.indexOf(roomID);
+}
+
+// extension to string for creating unique IDs
+String.prototype.hashCode = function() {
+    var hash = 0;
+    if (this.length == 0) {
+        return hash;
+    }
+    for (var i = 0; i < this.length; i++) {
+        char = this.charCodeAt(i);
+        hash = ((hash<<5)-hash)+char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+    return hash;
 }
