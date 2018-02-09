@@ -89,7 +89,7 @@
 			<div class="midbar">
 				<button id="startstop" class="buttonbar">Start!</button>
 
-				<input type="number" id ="tempo" class="buttonbar" value="120">
+				<input type="number" step='1.0' id ="tempo" class="buttonbar" value="120">
 				<button id="clearall" class="buttonbar">clear 'em all</button>
 				<button id="clearcurrent" class="buttonbar">clear this one</button>
 				<select id="output" class="buttonbar" placeholder="Pick A MIDI Out">
@@ -105,6 +105,12 @@
 					<option>Eraser</option>
 					<option>Chords</option>
 				</select>
+
+
+				<div>
+					<div class="toprow"></div>
+					<div class="bottomrow"></div>
+				</div>
 				<div id="chatWidnow">
 				    <div id="title_bar">
 				    	<div id="chatRoom"></div>
@@ -117,13 +123,14 @@
 				    	<button type="button" class="btn btn-md btn-default-outline" id="chatSend">send</button>
 				    	<button type="button" class="btn btn-md btn-default-outline" id="chatClear">clear</button>
 				    </div>
-				</div>
 			</div>
+		</div>
 		</div>
 
 		<script src="script.js"></script>
 		<script src="mouse.js"></script>
 		<script src="grid.js"></script>
 		<script src="instrumentprototypes.js"></script>
+
 	</body>
 </html>
