@@ -131,6 +131,11 @@ io.on('connection', function(socket){
     data.onright = false;
     // flipped = false;
     if(data.state === 'on'){
+      doubleCheck = userThatClicked.indexOf(data.user);
+      if(doubleCheck > -1){
+        userThatClicked.splice(doubleCheck,1);
+        start.splice(doubleCheck,1);
+      }
       userThatClicked.push(data.user);
       console.log(' User '+data.user+'clicked ',data.column);
       start.push(data.column);
@@ -199,10 +204,14 @@ io.on('connection', function(socket){
     if(data.mousemode === 2) {
       for(i=0;i<3;i++){
         if(data.row >= 0){
+          if(data.flipped){
+          sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = 'on';
+          }else{
           sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = data.state;
-          data.mousemode = 0;
+          }
           io.to(data.roomID).emit('stepreturn', data);
           data.row -= 2;
+
         }
       }
       createLog(data.roomID, new Date(), data.user, "step chord");

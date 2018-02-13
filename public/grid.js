@@ -9,10 +9,19 @@ function TBDgrid(name, rows, cols,type){
 		on: [],
 		off: []
 	}
-for(i = 0;i<columns;i++){
- 	this.notes.on.push([]);
- 	this.notes.off.push([]);
- }
+
+for(var h = 0;h < 4; h++){
+		this.notes.on.push([]);
+		this.notes.off.push([]);
+		for(var i = 0; i<columns; i++){
+			this.notes.on[h].push([]);
+			this.notes.off[h].push([]);
+		}
+}
+
+
+
+
 	this.out=0;
 	this.type = type;
 	if(type.rows){
@@ -35,26 +44,27 @@ for(i = 0;i<columns;i++){
 		}
 	}
 
-	this.update = function($el){
+	this.update = function($el, thumbIx){
+
 		var col = $el.index();
 		var row = $el.parent().index();
 		var thisMidiNote = type.midiNotes[rows-row-1];
-		var onIx = this.notes.on[col].indexOf(thisMidiNote);
-		var offIx = this.notes.off[(col+1)%this.cols].indexOf((type.midiNotes[rows-row-1]));
+		var onIx = this.notes.on[thumbIx][col].indexOf(thisMidiNote);
+		var offIx = this.notes.off[thumbIx][(col+1)%this.cols].indexOf((type.midiNotes[rows-row-1]));
 
 		if($el.hasClass('left') && $el.hasClass('right')){
-			if(onIx == -1){this.notes.on[col].push(thisMidiNote);}
-			if(offIx == -1){this.notes.off[(col+1)%columns].push(thisMidiNote);}
+			if(onIx == -1){this.notes.on[thumbIx][col].push(thisMidiNote);}
+			if(offIx == -1){this.notes.off[thumbIx][(col+1)%columns].push(thisMidiNote);}
 		}else if($el.hasClass('left')){
-			if(onIx == -1){this.notes.on[col].push(thisMidiNote);}
+			if(onIx == -1){this.notes.on[thumbIx][col].push(thisMidiNote);}
 		}else if($el.hasClass('right')){
-			if(offIx == -1){this.notes.off[(col+1)%columns].push(thisMidiNote);}
+			if(offIx == -1){this.notes.off[thumbIx][(col+1)%columns].push(thisMidiNote);}
 		}else{
 			if(onIx>-1){
-					this.notes.on[col].splice(onIx,1);
+					this.notes.on[thumbIx][col].splice(onIx,1);
 			}
 			if(offIx>-1){
-					this.notes.off[(col+1)%this.cols].splice(offIx,1);
+					this.notes.off[thumbIx][(col+1)%this.cols].splice(offIx,1);
 			}
 		}
 	}
@@ -111,10 +121,14 @@ this.gridReversed = function(grid,index,gridix){
 	this.clear = function(ix){
 		this.notes.on = [];
 		this.notes.off = [];
-		for(i = 0; i<columns; i++){
+		for(var h = 0;h < 4; h++){
 			this.notes.on.push([]);
 			this.notes.off.push([]);
+			for(var i = 0; i<columns; i++){
+				this.notes.on[h].push([]);
+				this.notes.off[h].push([]);
 		}
+	}
 		$(".gridContainer:eq("+ix+")").find(".clicked").removeClass("clicked left right");
 		$(".little.selected").find(".clicked").removeClass("clicked");
 	}
@@ -185,6 +199,13 @@ this.gridReversed = function(grid,index,gridix){
 	gr.find(".step").css({
 		"width": w+"%"
 	});
+
+	for(var i = 0; i < columns; i++){
+		var overFour = Math.floor(i/4);
+			if(overFour%2 === 1){
+			$('.step:eq('+i+')', '.row').addClass('quarter');
+		}
+	}
 
 	for(var i = 0 ; i < 3; i++){
 		var gridClone = gr.clone();

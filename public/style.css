@@ -269,6 +269,11 @@ z-index: 10;
 
 }
 
+.step.quarter{
+  background-color:rgba(255, 204, 255, 0.3);
+
+}
+
 .rowlabel{
     font-weight:700;
     font-style:italic;
