@@ -18,7 +18,7 @@ var mousemode = 0;
 var reversing = false;
 var beatDuration = 500;
 var roomID = -1;
-var username = "";
+var user = "";
 var users = [];
 var currInst;
 var refreshHistory = 1;
@@ -48,9 +48,9 @@ WebMidi.enable(function(err){
 	$('#output').change(function(){
 		selectedOutput = $('option:selected', this).index()-1;
 		if(selectedOutput < 0){
-		instruments[currentGridIndex].out = 0;
+			instruments[currentGridIndex].out = 0;
 		}else{
-		instruments[currentGridIndex].out = WebMidi.outputs[selectedOutput];
+			instruments[currentGridIndex].out = WebMidi.outputs[selectedOutput];
 		}
 		console.log(instruments.out);
 	})
@@ -86,60 +86,20 @@ $(document).ready(function(){
 		$('#chatRoom').text(chatLabel);
 	}
 
-	// modal for room if none provided
-	if (roomID == "") {
-		// pick room and username
-	    $('#roomPicker').modal('show');
-	    $('#roomButton').click(function(e) {
-	        roomID = $("#roomName").val();
-
-					// send roomID to server for connection
-					socket.emit('room', {roomID: roomID});
-
-					// capture username, send to server for association to room
-					username = $('#username').val();
-					socket.emit('user',
-					{
-							roomID: roomID,
-							username: username
-					});
-
-					// update chat label with roomID
-					var chatLabel = "In room: " + roomID;
-					$('#chatRoom').text(chatLabel);
-	    });
-	// modal for username only if roomID came from url
-	} else {
-		// autofill room and pick username if room provided in url
-		$('#roomPicker').modal('show');
-		$('#greeting').text("Pick a username for the sesh!")
-		$('#roomName').hide();
-    $('#roomButton').click(function() {
-				// capture username, send to server for association to room
-				// TODO: check for username, only send if available
-				username = $('#username').val();
-				if (users.indexOf(username) == -1) {
-					console.log(users.indexOf(username) + ": username " + username + " available.");
-					socket.emit('user',
-					{
-							roomID: roomID,
-							username: username
-					});
-				} else {
-					// TODO: fix this, check for existing username doesn't show modal
-					console.log(users.indexOf(username) + ": username " + username + " not available.");
-					$('#roomPicker').modal('show');
-					//TODO: this is not doing ANYTHING
-					$('#greeting').text("Sorry - somebody already took that name! Try another.");
-					$('#roomName').hide();
-				}
-    });
-	}
+	// autofill room and pick username if room provided in url
+	$('#userPicker').modal('show');
+  $('#roomButton').click(function() {
+			user = $('#username').val();
+			socket.emit('user',
+			{
+					roomID: roomID,
+					user: user
+			});
+  });
 
 	// get updated list of users after new member joins room
 	socket.on('update users', function(data){
 		users = data.users;
-		console.log(users);
 	});
 
 	// get current grid state from server
@@ -255,7 +215,6 @@ $(document).ready(function(){
 		sendStep(state);
 
 		if(reversing && !clear && mousemode != 1){
-
 			sendStep('off');
 			sendStep('');
 		}
@@ -364,7 +323,7 @@ $(document).ready(function(){
 			rows: rowCount,
 			type: presets[type],
 			roomID: roomID,
-			user: username
+			user: user
 		});
 	});
 
@@ -390,7 +349,7 @@ $(document).ready(function(){
 			inst: currentGridIndex,
 			gridix: currentThumb,
 			roomID: roomID,
-			user: username
+			user: user
 		});
 	});
 
@@ -398,7 +357,7 @@ $(document).ready(function(){
 		socket.emit('clearall',
 		{
 			roomID: roomID,
-			user: username
+			user: user
 		})
 	})
 
@@ -419,7 +378,7 @@ $(document).ready(function(){
 		{
 			tempo: tempo,
 			roomID: roomID,
-			user: username
+			user: user
 		});
 	});
 
@@ -452,7 +411,7 @@ $(document).ready(function(){
 			inst:currentGridIndex,
 			gridix: currentThumb,
 			roomID:roomID,
-			user: username
+			user: user
 		});
 	});
 
@@ -468,7 +427,7 @@ $(document).ready(function(){
 			inst:currentGridIndex,
 			roomID:roomID,
 			gridix: currentThumb,
-			user: username
+			user: user
 		});
 	});
 
@@ -547,7 +506,7 @@ $(document).ready(function(){
 		{
 			tab2delete: tab2delete,
 			roomID: roomID,
-			user: username
+			user: user
 		});
 	});
 
@@ -597,14 +556,14 @@ function draw(){
 // message submit and tag search fn def
 function messageSubmit() {
 	// username
-	var username = $('#username').val();
+	var user = $('#username').val();
 	// message
 	var message = $('#chatInput').val()
 
 	// sent plain chat to server
 	socket.emit('chat to server',
 	{
-		user: username,
+		user: user,
 		message: message,
 		roomID: roomID
 	});
@@ -686,7 +645,7 @@ switch(data.state){
 			inst: currentGridIndex,
 			roomID: roomID,
 			mousemode: mousemode,
-			user: username,
+			user: user,
 			shifted: shifted,
 			state: state,
 			grid: currentThumb
