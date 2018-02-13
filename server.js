@@ -13,6 +13,8 @@ var instrumentArray = [];
 var sessions = [];
 // names of all rooms
 var rooms = [];
+// all socket clients
+var clients = [];
 var roomID = "";
 var roomIndex = -1;
 var start = [];
@@ -36,7 +38,7 @@ setInterval(function() {
 }, 3600000);
 
 io.on('connection', function(socket){
-  // connection console check
+  // on connection
   console.log('A user connected');
 
   // timeout warning console check
@@ -44,15 +46,31 @@ io.on('connection', function(socket){
     socket.send('Sent a message 4 seconds after connection!');
   }, 4000);
 
-  // disconnect console check
+  // on disconnect
   socket.on('disconnect', function () {
-    console.log('A user disconnected');
+    if (clients.length > 0) {
+      var clientIx = getClient(socket.id);
+
+      if (typeof clients[clientIx] != 'undefined') {
+        // find room and user
+        var roomIndex = rooms.indexOf(clients[clientIx].roomID);
+        var userIndex = sessions[roomIndex].users.indexOf(clients[clientIx].user);
+
+        console.log("User ", clients[clientIx].user, " disconnected from room ", clients[clientIx].roomID);
+
+        // remove user and client
+        sessions[roomIndex].users.splice(clients[clientIx], 1);
+        clients.splice(clientIx, 1);
+        console.log("Remaining clients: ", clients);
+      }
+    }
   });
 
   // connect socket to room
   socket.on('room', function(data) {
     roomID = data.roomID;
     socket.join(roomID);
+
     // instantiate new session or return existing session
     roomIndex = rooms.indexOf(roomID);
     if (roomIndex > -1) {
@@ -86,13 +104,17 @@ io.on('connection', function(socket){
   // add user to session by roomID
   socket.on('user', function(data) {
     roomID = data.roomID;
-    username = data.username;
+    user = data.user;
 
+    // TODO: capture client details
+    clients.push(new client(socket, roomID, user));
+    console.log("New client. Socket: ", socket.id, ", roomID: ", roomID, ", user: ", user);
+    console.log("All clients: ", clients);
 
     // find room, add user
     roomIndex = rooms.indexOf(roomID);
-    sessions[roomIndex].users.push(username);
-    createLog(roomID, new Date(), "user added to room", username);
+    sessions[roomIndex].users.push(user);
+    createLog(roomID, new Date(), "user added to room", user);
 
     // send full user list to all users in rooms
     io.to(data.roomID).emit('update users', {users: sessions[roomIndex].users});
@@ -151,30 +173,30 @@ io.on('connection', function(socket){
       }
     }
 
-    if(data.state === 'off'){
-
+    if (data.state === 'off') {
       var offix = userThatClicked.indexOf(data.user);
-      console.log(userThatClicked);
-      console.log('start:  ',start);
-      console.log(' User '+data.user+'unclicked ',data.column);
 
-      if(data.column === start[offix]){
+      if (data.column === start[offix]) {
         data.state = 'onoff';
-      }else{
+      } else {
         data.flipped = data.column < start[offix] ? true : false;
         console.log('Flipped?:  ', data.flipped);
         if(data.flipped){
-        sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][start[offix]].state = 'off';
-        }else{
-        sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][start[offix]].state = 'on';
+          sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][start[offix]].state = 'off';
+        } else {
+          sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][start[offix]].state = 'on';
+        }
       }
 
-      }
+      // log event
+      console.log("step logged");
+      createLog(data.roomID, new Date(), "step change", data.user, Math.abs(start[offix] - data.column)+1);
+
+      // clean up
       userThatClicked.splice(offix,1);
       start.splice(offix,1);
     }
-    // console.log('Click State: ',data.state);
-    if(data.mousemode === 2){
+    if(data.mousemode === 2) {
       for(i=0;i<3;i++){
         if(data.row >= 0){
           sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = data.state;
@@ -183,21 +205,21 @@ io.on('connection', function(socket){
           data.row -= 2;
         }
       }
-    }else if(data.mousemode === 1){
+      createLog(data.roomID, new Date(), data.user, "step chord");
+    } else if (data.mousemode === 1) {
       data.state = '';
       sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = data.state;
       io.to(data.roomID).emit('stepreturn', data);
-    }else{
-      if(data.flipped){
-      sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = 'on';
-      }else{
-      sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = data.state;
+      createLog(data.roomID, new Date(), data.user, "step erased");
+    } else {
+      if (data.flipped) {
+        sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = 'on';
+      } else {
+        sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = data.state;
       }
-    // send step to clients
-    io.to(data.roomID).emit('stepreturn', data);
-    // log event
-    createLog(data.roomID, new Date(), "step change", data.user);
-  }
+      // send step to clients
+      io.to(data.roomID).emit('stepreturn', data);
+    }
   });
 
   // create new instrument and correstponding grid
@@ -387,21 +409,13 @@ function session(roomID, socket){
 }
 
 // activity log object
-function log(roomID, timestamp, activity, user, _id) {
+function log(roomID, timestamp, activity, user, step_size, _id) {
   this.roomID = roomID;
   this.timestamp = timestamp;
   this.activity = activity;
   this.user = user;
+  this.step_size = step_size;
   this._id = _id;
-}
-
-// TODO: fix this up with everything you need for a personal edit history
-function user(username) {
-  // stuff like:
-  // this.undo
-  // this.redo
-  // this.private
-  // this.pushChanges
 }
 
 // check for sessions older than five days, executed on timer
@@ -409,6 +423,7 @@ function checkSessionAge() {
   for (i = sessions.length - 1; i >= 0; i --) {
     if (new Date() - sessions[i].created > 86400000 * 5) {
       console.log("Removing " + sessions[i].roomID + ", created at: " + new Date(sessions[i].created));
+      createLog(sessions[i].roomID, new Date(), "room removed");
       sessions.splice(i,1);
       rooms.splice(i,1);
       console.log(sessions.length + " sessions remain.")
@@ -416,14 +431,13 @@ function checkSessionAge() {
   }
 }
 
-function createLog(roomID, timestamp, activity, user) {
-  // TODO: create unique ID
+function createLog(roomID, timestamp, activity, user, step_size) {
   var _id = new Date();
   _id = user + roomID + _id.getTime();
   _id = Math.abs(_id.hashCode());
 
   // create json formatted log
-  var newLog = new log(roomID, timestamp, activity, user, _id)
+  var newLog = new log(roomID, timestamp, activity, user, step_size, _id)
 
   // connect to db server
   MongoClient.connect(uri, function(err, client) {
@@ -432,7 +446,6 @@ function createLog(roomID, timestamp, activity, user) {
     const db = client.db(dbName);
     const collection = db.collection('tbd-logs');
 
-    // TODO: "duplicate key error"
     try {
       collection.insertOne(newLog, function(err, result) {
         if(err) throw err;
@@ -453,6 +466,20 @@ function getIx(roomID){
 
 function step(){
   this.state = '';
+}
+
+function client(socket, roomID, user) {
+  this.client = socket;
+  this.roomID = roomID;
+  this.user = user;
+}
+
+function getClient(id) {
+  for (var i=0; i<clients.length; i++) {
+    if (clients[i].client.id == id) {
+      return i;
+    }
+  }
 }
 
 // extension to string for creating unique IDs
