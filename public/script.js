@@ -2,7 +2,7 @@
 var socket = io();
 
 // initialize values
-var rootNote = 40;
+var rootNote = 45;
 var row, column, objGrid,lastCellLeft,twoCellsBack,tempo,ix,columnChanged;
 
 var columns = 32;
@@ -27,6 +27,7 @@ var start, $start;
 var clear;
 var lastcolumn;
 var passedStart;
+var chord; var $chord = [[],[]];
 
 
 function setup(){
@@ -286,8 +287,9 @@ $(document).ready(function(){
 		$('.thumbs:eq('+currentGridIndex+')').addClass('selected');
 		}
 		if(currentGridIndex > -1){
-		var curThumb = instruments[currentGridIndex].thumb;
-		$('.thumbs.selected .grid:eq('+curThumb+')').addClass('selected');
+		currentThumb = instruments[currentGridIndex].thumb;
+		$('.thumbs .grid').removeClass('selected');
+		$('.thumbs:eq('+currentGridIndex+') .grid:eq('+currentThumb+')').addClass('selected');
 		}
 		// This sets the output so the users knows that output on their current tab...
 		if(instruments[currentGridIndex] && currentGridIndex>0){
@@ -295,7 +297,6 @@ $(document).ready(function(){
 		}else{
 			$('#output').val('Pick yr MIDI out!');
 		}
-
 	});
 
 
@@ -485,13 +486,13 @@ $(document).ready(function(){
 		$('.tab-content.selected .grid').hide();
 		$('.tab-content.selected .grid:eq('+currentThumb+')').show();
 		$thumb.addClass('selected');
-		messageSender = true;
-		socket.emit('getgrid',
-		{
-			inst:currentGridIndex,
-			gridix:currentThumb,
-			roomID: roomID
-		});
+		// messageSender = true;
+		// socket.emit('getgrid',
+		// {
+		// 	inst:currentGridIndex,
+		// 	gridix:currentThumb,
+		// 	roomID: roomID
+		// });
 	})
 
 	socket.on('getgridreturn',function(data){
@@ -578,12 +579,13 @@ $(document).on('mousedown','.rowlabel',function(){
 function draw(){
 	counter = frameCount%columns;
 	for(i=0;i<instruments.length;i++){
-		if(instruments[i].out && instruments[i].notes.off[counter]){
-			instruments[i].out.stopNote(instruments[i].notes.off[counter],1);
+		var currThumb = instruments[i].thumb;
+		if(instruments[i].out && instruments[i].notes.off[currThumb][counter]){
+			instruments[i].out.stopNote(instruments[i].notes.off[currThumb][counter],1);
 		}
 
-		if(instruments[i].out && instruments[i].notes.on[counter]){
-			instruments[i].out.playNote(instruments[i].notes.on[counter],1);
+		if(instruments[i].out && instruments[i].notes.on[currThumb][counter]){
+			instruments[i].out.playNote(instruments[i].notes.on[currThumb][counter],1);
 		}
 
 	}
@@ -622,8 +624,6 @@ function showTab(index){
 
 function stepReturn(data){
 	// console.log(data.state);
-
-
 var $step = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+")  .row:eq("+data.row+") .step:eq("+data.column+")");
 var $stepthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb:eq("+data.column+")");
 if(data.mousemode === 1){
@@ -635,46 +635,70 @@ switch(data.state){
 				if(data.onleft){
 					$left = $(".gridContainer:eq("+data.inst+")  .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+(data.column-1)+")");
 					$left.addClass('right');
-					instruments[data.inst].update($left);
+					instruments[data.inst].update($left, data.grid);
 				}
 				if(data.onright){
 					$right = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+(data.column+1)+")");
 					$right.addClass('left');
-					instruments[data.inst].update($right);
+					instruments[data.inst].update($right, data.grid);
 				}
-				instruments[data.inst].update($step);
+				instruments[data.inst].update($step, data.grid);
 		$stepthumb.removeClass('clicked');
 		break;
 	case 'on':
 		$step.addClass('clicked');
+
 		$start = $step;
+		if(data.mousemode == 2){
+			$chord[0].push($step);
+		}
 		$stepthumb.addClass('clicked');
 		break;
 	case 'onoff':
 		$step.addClass('clicked left right');
-		instruments[data.inst].update($step);
+		instruments[data.inst].update($step,data.grid);
 		$stepthumb.addClass('clicked');
+		if(data.mousemode === 2){
+			$chord = [[],[]];
+		}
 		break;
 	case 'sus':
 		$step.removeClass('left right');
 		$step.addClass('clicked');
-		instruments[data.inst].update($step);
+		instruments[data.inst].update($step,data.grid);
 
 		$stepthumb.addClass('clicked');
 
 		break;
 	case 'off':
-		console.log(data.mousemode);
-				if(data.flipped){
+		if(data.mousemode == 2){
+			$chord[1].push($step);
+		}
+
+		if(data.flipped){
 					$end = $start;
 					$start = $step;
+					if($chord[0].length === $chord[1].length && data.mousemode===2){
+						$chord.reverse();
+						console.log("reversed for the chord");
+						chordUpdate($chord, data);
+						$chord = [[],[]];
+					}
 				}else{
 					$end = $step;
+				if($chord[0].length === $chord[1].length && data.mousemode===2){
+						console.log("reversed for the chord");
+						chordUpdate($chord, data);
+						$chord = [[],[]];
 				}
+			}
+
+			if(data.mousemode != 2){
 				$start.addClass('left clicked');
 				$end.addClass('right clicked');
-				instruments[data.inst].update($start);
-				instruments[data.inst].update($end);
+				instruments[data.inst].update($start,data.grid);
+				instruments[data.inst].update($end,data.grid);
+			}
 			break;
 		}
 	}
@@ -691,6 +715,24 @@ switch(data.state){
 			state: state,
 			grid: currentThumb
 		});
+	}
+
+	function chordUpdate($chord, data){
+		$chord[0].forEach(function(element){
+			element.removeClass('right');
+			element.addClass('left clicked')
+		})
+
+		$chord[1].forEach(function(element){
+			element.removeClass('left');
+			element.addClass('right clicked');
+		})
+
+		for(var i = 0; i < $chord[0].length;i++){
+			instruments[data.inst].update($chord[0][i],data.grid);
+			instruments[data.inst].update($chord[1][i],data.grid);
+		}
+
 	}
 
 
