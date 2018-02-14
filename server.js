@@ -107,6 +107,10 @@ io.on('connection', function(socket){
   socket.on('step', function(data){
     data.onleft = false;
     data.onright = false;
+    if(data.mousemode === 1){
+      data.state = '';
+    }
+
     // flipped = false;
     if(data.state === 'on'){
       doubleCheck = userThatClicked.indexOf(data.user);
@@ -187,6 +191,33 @@ io.on('connection', function(socket){
           }else{
           sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = data.state;
           }
+
+          if(data.onleft && i){
+            var left = sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state;
+              switch(left){
+                case 'sus':
+                sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state = 'off';
+                break;
+                case 'on':
+                sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state = 'onoff';
+              }
+          }
+          if(data.onright && i){
+            var right = sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state;
+            switch(right){
+              case 'sus':
+              sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'on';
+              data.onright = true;
+              break;
+              case 'off':
+              sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'onoff';
+              break;
+              case 'onoff':
+              sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'onoff';
+              break;
+            }
+
+          }
           io.to(data.roomID).emit('stepreturn', data);
           data.row -= 2;
 
@@ -254,7 +285,7 @@ io.on('connection', function(socket){
   });
 
   socket.on('tempo', function(data){
-    sessions[getIx(data.roomID)].tempo = data.tempo*60;
+    sessions[getIx(data.roomID)].tempo = data.tempo;
     io.to(data.roomID).emit('temporeturn', data);
     createLog(data.roomID, new Date(), "tempo changed", data.user);
   })
