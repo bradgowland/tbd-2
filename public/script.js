@@ -113,6 +113,9 @@ $(document).ready(function(){
 				objGrid = currInst.grid;
 				instruments[h].connection(currInst.grid,h);
 				instruments[h].connection([currInst.grid[0]],h);
+				$('#tempo').val(data.tempo);
+				frameRate(data.tempo/15);
+
 			}
 		}
 
@@ -338,6 +341,7 @@ $(document).ready(function(){
 			$('ul.tabs li a:eq('+instruments.length+')').addClass('selected');
 			$('.tab-content:eq('+instruments.length+')').addClass('selected');
 			$('.thumbs:eq('+(instruments.length-1)+')').addClass('selected');
+			currentThumb = instruments[currentGridIndex].thumb;
 			userThatClicked = false;
 		}
 	});
@@ -374,7 +378,7 @@ $(document).ready(function(){
 	});
 
 	$('#tempo').change(function(){
-		tempo = $(this).val()/15;
+		tempo = $(this).val()
 		socket.emit('tempo',
 		{
 			tempo: tempo,
@@ -385,9 +389,9 @@ $(document).ready(function(){
 
 	socket.on('temporeturn',function(data){
 		// clock.frequency.value = data.tempo;
-		$('#tempo').val(data.tempo*15);
+		$('#tempo').val(data.tempo);
 		beatDuration = 1000*(60/(data.tempo*15));
-		frameRate(data.tempo);
+		frameRate(data.tempo/15);
 	});
 
 	$('#startstop').click(function(){
@@ -398,6 +402,11 @@ $(document).ready(function(){
 			// clock.start();
 			loop();
 		}else{
+			for(var i = 0; i < instruments.length; i++){
+				if(instruments[i].out){
+					instruments[i].out.stopNote('all',1)
+				}
+			}
 			$(this).text('Start');
 			// clock.stop();
 			noLoop();
@@ -653,10 +662,11 @@ switch(data.state){
 			}
 
 			if(data.mousemode != 2){
-				$start.addClass('left clicked');
-				$end.addClass('right clicked');
-				instruments[data.inst].update($start,data.grid);
+				if($start){$start.addClass('left clicked');
+				instruments[data.inst].update($start,data.grid);}
+				if($end){$end.addClass('right clicked');
 				instruments[data.inst].update($end,data.grid);
+				}
 			}
 			break;
 		}
