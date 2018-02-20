@@ -384,6 +384,8 @@ $(document).ready(function(){
 			$('.thumbs:eq('+(instruments.length-1)+')').addClass('selected');
 			currentThumb = instruments[currentGridIndex].thumb;
 			userThatClicked = false;
+		}else{
+
 		}
 	});
 
@@ -568,9 +570,12 @@ $(document).ready(function(){
 		$('.thumbs:eq('+ix+')').remove();
 		ix-=1;
 		instruments.splice(ix,1);
-		$('.tab-link:eq('+ix+')').addClass('selected');
-		$('.tab-content:eq('+ix+')').addClass('selected');
-		$('.thumbs:eq('+ix+')').addClass('selected');
+		if(currentGridIndex>data.tab2delete){
+			$('.tab-link:eq('+currentGridIndex+')').addClass('selected');
+			$('.tab-content:eq('+currentGridIndex+')').addClass('selected');
+			$('.thumbs:eq('+currentGridIndex+')').addClass('selected');
+			currentGridIndex -= 1;
+		}
 	})
 });
 

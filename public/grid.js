@@ -138,8 +138,8 @@ this.gridReversed = function(grid,index,gridix){
 
 	// initial values
 
-	$('ul.tabs li a').removeClass('selected');
-	$('.tab-content').removeClass('selected');
+	// $('ul.tabs li a').removeClass('selected');
+	// $('.tab-content').removeClass('selected');
 		//Create Tab
 	//Creates the Instrument Tag Link
 	var newTab = '<li><a class="tab-link" data-tab="'+name+'">'+name+'  <input type="image" class="deletetab" src="littlex.png"></input></a></li>';
