@@ -41,12 +41,12 @@ setInterval(function() {
     console.log('ping to keep app awake');
 }, 300000);
 
-// check each hour for cleaning up old rooms, update db logs
+// check every five minutes for cleaning up old rooms, update db logs
 setInterval(function() {
   console.log("Checking for timed-out sessions at current time ", new Date())
   createLog("", new Date(), "checked session ages");
   checkSessionAge();
-}, 360000);
+}, 300000);
 
 io.on('connection', function(socket){
   // on connection
