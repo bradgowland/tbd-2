@@ -1,6 +1,7 @@
 var express = require('express');
 var app = express();
 var http = require('http').Server(app);
+var request = require('http');
 var io = require('socket.io')(http);
 var normalizeSocket = require("normalize-port");
 var port = normalizeSocket(process.env.PORT || "8081");
@@ -25,17 +26,27 @@ app.use(express.static('public'));
 
 // dynamic url for rooms
 app.get('/', function(req, res){
-  res.sendFile(__dirname + '/public/index.html')
+  res.sendFile(__dirname + '/public/index.html');
+  // TODO: can delete later, just a test
+  console.log('homepage connection test');
 });
 app.get('/:dynamicroute', function(req,res) {
   res.sendFile(__dirname + '/public/app.html')
 });
 
-// check each hour for cleaning up rooms older than 1 day, update db logs
+// keep heroku from going to sleep
+setInterval(function() {
+    request.get('http://tbd.zone/');
+    // TODO: can delete later, just a test
+    console.log('ping to keep app awake');
+}, 300000);
+
+// check each hour for cleaning up old rooms, update db logs
 setInterval(function() {
   console.log("Checking for timed-out sessions at current time ", new Date())
+  createLog("", new Date(), "checked session ages");
   checkSessionAge();
-}, 3600000);
+}, 360000);
 
 io.on('connection', function(socket){
   // on connection
@@ -429,6 +440,7 @@ function checkSessionAge() {
       console.log(sessions.length + " sessions remain.")
     }
   }
+  console.log("All sessions checked. " + sessions.length + " sessions remain.")
 }
 
 function createLog(roomID, timestamp, activity, user, step_size) {
