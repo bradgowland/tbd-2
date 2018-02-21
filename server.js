@@ -210,7 +210,7 @@ io.on('connection', function(socket){
 
       // log event
       console.log("step logged");
-      createLog(data.roomID, new Date(), "step change", data.user, Math.abs(start[offix] - data.column)+1);
+      createLog(data.roomID, new Date(), "step change", data.user, Math.abs(start[offix] - data.column)+1, data.inst);
 
       // clean up
       userThatClicked.splice(offix,1);
@@ -460,12 +460,13 @@ function session(roomID, socket){
 }
 
 // activity log object
-function log(roomID, timestamp, activity, user, step_size, _id) {
+function log(roomID, timestamp, activity, user, step_size, instrument, _id) {
   this.roomID = roomID;
   this.timestamp = timestamp;
   this.activity = activity;
   this.user = user;
   this.step_size = step_size;
+  this.instrument = instrument;
   this._id = _id;
 }
 
@@ -483,13 +484,13 @@ function checkSessionAge() {
   console.log("All sessions checked. " + sessions.length + " sessions remain.")
 }
 
-function createLog(roomID, timestamp, activity, user, step_size) {
+function createLog(roomID, timestamp, activity, user, step_size, instrument) {
   var _id = new Date();
   _id = user + roomID + _id.getTime();
   _id = Math.abs(_id.hashCode());
 
   // create json formatted log
-  var newLog = new log(roomID, timestamp, activity, user, step_size, _id)
+  var newLog = new log(roomID, timestamp, activity, user, step_size, instrument, _id)
 
   // connect to db server
   MongoClient.connect(uri, function(err, client) {
