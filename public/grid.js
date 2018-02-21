@@ -1,10 +1,18 @@
 var noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 
-function TBDgrid(name, rows, cols,type){
+//stepObj
+function TBDstep(row,start,stop){
+	this.on = start;
+	this.off = stop;
+	this.row = row;
+}
+
+function TBDgrid(name, rows, cols,type, root){
 	this.rows = rows;
 	this.cols = cols;
 	this.thumb = 0;
 	this.name = name;
+	this.rootNote = root;
 	this.notes = {
 		on: [],
 		off: []
@@ -26,7 +34,7 @@ for(var h = 0;h < 4; h++){
 	this.type = type;
 	if(type.rows){
 		this.rows = type.rows;
-		console.log(this.rows);
+		// console.log(this.rows);
 	}
 
 	if(type.melodic){
@@ -34,8 +42,8 @@ for(var h = 0;h < 4; h++){
 		var scaleLen = type.scale.length;
 		//repeats the scale while moving up octaves
 		for(i = 0; i <this.rows; i++){
-			var octave = Math.floor(i/scaleLen);
-			this.type.midiNotes.push(rootNote + type.scale[i%scaleLen]+ (12*octave))
+			var oct = Math.floor(i/scaleLen);
+			this.type.midiNotes.push(this.rootNote + type.scale[i%scaleLen]+ (12*oct))
 		}
 		//uses the notes to create the note labels
 		for(i = 0;i < this.rows;i++){
@@ -49,9 +57,10 @@ for(var h = 0;h < 4; h++){
 		var col = $el.index();
 		var row = $el.parent().index();
 		var thisMidiNote = type.midiNotes[rows-row-1];
+
+		// console.log('row:  ', row, '  thisMidiNote',thisMidiNote);
 		var onIx = this.notes.on[thumbIx][col].indexOf(thisMidiNote);
 		var offIx = this.notes.off[thumbIx][(col+1)%this.cols].indexOf((type.midiNotes[rows-row-1]));
-
 		if($el.hasClass('left') && $el.hasClass('right')){
 			if(onIx == -1){this.notes.on[thumbIx][col].push(thisMidiNote);}
 			if(offIx == -1){this.notes.off[thumbIx][(col+1)%columns].push(thisMidiNote);}
@@ -138,8 +147,8 @@ this.gridReversed = function(grid,index,gridix){
 
 	// initial values
 
-	$('ul.tabs li a').removeClass('selected');
-	$('.tab-content').removeClass('selected');
+	// $('ul.tabs li a').removeClass('selected');
+	// $('.tab-content').removeClass('selected');
 		//Create Tab
 	//Creates the Instrument Tag Link
 	var newTab = '<li><a class="tab-link" data-tab="'+name+'">'+name+'  <input type="image" class="deletetab" src="littlex.png"></input></a></li>';
@@ -252,8 +261,8 @@ function createGrid(rows,columns){
 
 function findNoteFromNumber(num){
 	var theNote = noteNames[num%12];
-	octave = Math.floor(num/12) - 1;
-	return theNote+octave;
+	var octaveNum = Math.floor(num/12) - 1;
+	return theNote+octaveNum;
 }
 
 function isAnOnset(ix,row,col){
@@ -282,5 +291,8 @@ function remove(note, array){
 	}
 	return array;
 }
+
+
+
 
 // $(".gridContainer:eq("+data.inst+") .row:eq("+data.row+") .step:eq("+data.column+")");

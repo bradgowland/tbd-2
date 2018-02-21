@@ -2,12 +2,13 @@
 var socket = io();
 
 // initialize values
-var rootNote = 45;
+var rootNote = [21,45,69];
+// var rootNote = 45;
 var row, column, objGrid,lastCellLeft,twoCellsBack,tempo,ix,columnChanged;
 
 var columns = 32;
 var userThatClicked = false;
-var currentGridIndex = 0;
+var currentGridIndex = 0;var lastIx;
 var counter = 0;
 var currentThumb = 0;
 var tempo, messageSender;
@@ -28,13 +29,15 @@ var clear;
 var lastcolumn;
 var passedStart;
 var chord; var $chord = [[],[]];
-
-
+var started;
+var stopcounter;
+var octave;
+$()
 function setup(){
 	frameRate(8);
 	noLoop();
 }
-
+$('.container').hide();
 //enable WebMIDI
 WebMidi.enable(function(err){
 	if(err){
@@ -109,14 +112,14 @@ $(document).ready(function(){
 		if(data.instruments){
 			for (var h = 0; h < data.instruments.length;h++){
 				currInst = data.instruments[h];
-				instruments.push(new TBDgrid(currInst.name,currInst.rows,currInst.cols,currInst.type));
+				instruments.push(new TBDgrid(currInst.name,currInst.rows,currInst.cols,currInst.type,currInst.root));
 				objGrid = currInst.grid;
 				instruments[h].connection(currInst.grid,h);
 				instruments[h].connection([currInst.grid[0]],h);
 				$('#tempo').val(data.tempo);
 				frameRate(data.tempo/15);
-
 			}
+
 		}
 
 		// get current list of Users
@@ -125,9 +128,9 @@ $(document).ready(function(){
 		// TODO: get current tempo
 		showTab(instruments.length);
 		currentGridIndex = instruments.length-1;
-
+		lastIx = currentGridIndex;
 		$('.thumbs:eq('+currentGridIndex+')').addClass('selected');
-
+		$('.container').show();
 	});
 
 	// initial grid and mouse states
@@ -239,6 +242,7 @@ $(document).ready(function(){
 		$('ul.tabs li a').removeClass('selected');
 		$('.tab-content').removeClass('selected');
 		$('.thumbs').removeClass('selected')
+		lastIx = currentGridIndex;
 		currentGridIndex = $("ul.tabs li a").index(this)-1;
 		$(this).addClass('selected');
 		$("#"+tab_id+"").addClass('selected');
@@ -293,6 +297,12 @@ $(document).ready(function(){
 	}
 	});
 
+	$('#octave').change(function(){
+		octave = $('option:selected', this).index()-1;
+		console.log('which octave',octave);
+
+	})
+
 	$('#mousemode').change(function(){
 		$('.grid').removeClass('eraser');
 		mousemode = $('option:selected', this).index();
@@ -317,22 +327,31 @@ $(document).ready(function(){
 	$(".newInsButton").click(function(){
 		var instName = $("#insName").val();
 		var rowCount = $("#rowCount").val();
-		if(!rowCount){
+		if(octave > -1){
+		var thisRoot = rootNote[octave];
+	}else{
+		thisRoot = rootNote[1];
+	}
+		if(!rowCount || type === 0){
 			rowCount = 12;
 		}
 		userThatClicked = true;
+
 
 		socket.emit('newInst',{
 			name: instName,
 			rows: rowCount,
 			type: presets[type],
 			roomID: roomID,
-			user: user
+			user: user,
+			root: thisRoot
 		});
 	});
 
 	socket.on('newInstReturn',function(data){
-		instruments.push(new TBDgrid(data.name,data.rows,columns,data.type));
+
+		console.log(data);
+		instruments.push(new TBDgrid(data.name,data.rows,columns,data.type,data.root));
 		if(userThatClicked){
 			currentGridIndex = instruments.length-1;
 			$('ul.tabs li a').removeClass('selected');
@@ -399,6 +418,8 @@ $(document).ready(function(){
 		if($(this).hasClass('started')){
 			$(this).text('STOP');
 			counter = 0;
+			stopcounter = false;
+			started = true;
 			// clock.start();
 			loop();
 		}else{
@@ -406,12 +427,13 @@ $(document).ready(function(){
 				if(instruments[i].out){
 					instruments[i].out.stopNote('all',1)
 				}
+				$('.step').removeClass('current');
+
 			}
 			$(this).text('Start');
 			// clock.stop();
 			noLoop();
-			$('.step').removeClass('current');
-
+			stopcounter = true;
 		}
 	});
 
@@ -512,6 +534,7 @@ $(document).ready(function(){
 
 	$(document).on('click','.deletetab',function(){
 		var tab2delete = $('.deletetab').index(this);
+		console.log('sending ix: ',currentGridIndex)
 		socket.emit('deletetab',
 		{
 			tab2delete: tab2delete,
@@ -524,12 +547,32 @@ $(document).ready(function(){
 		ix = data.tab2delete+1;
 		$('.tab-link:eq('+ix+')').parent().remove();
 		$('.tab-content:eq('+ix+')').remove();
-		$('.thumbs:eq('+ix+')').remove();
+		$('.thumbs:eq('+(ix-1)+')').remove();
+		var needsToToggle= lastIx >= ix-1 ? true:false;
+		console.log('needs to toggle?   ', needsToToggle);
 		ix-=1;
 		instruments.splice(ix,1);
-		$('.tab-link:eq('+ix+')').addClass('selected');
-		$('.tab-content:eq('+ix+')').addClass('selected');
-		$('.thumbs:eq('+ix+')').addClass('selected');
+		if(needsToToggle){
+
+			if(lastIx === 0){
+				lastIx = 1;
+			}
+
+		console.log('lastIx:  ', lastIx);
+
+
+
+		console.log('the index  ', lastIx, '  should be set to selected');
+		$('.tab-link:eq('+(lastIx)+')').addClass('selected');
+		$('.tab-content:eq('+(lastIx)+')').addClass('selected');
+		$('.thumbs:eq('+(lastIx-1)+')').addClass('selected');
+		currentGridIndex = lastIx - 1;
+	}else{
+		$('.tab-link:eq('+(lastIx+1)+')').addClass('selected');
+		$('.tab-content:eq('+(lastIx+1)+')').addClass('selected');
+		$('.thumbs:eq('+(lastIx)+')').addClass('selected');
+		currentGridIndex = lastIx;
+	}
 	})
 });
 
@@ -545,7 +588,16 @@ $(document).on('mousedown','.rowlabel',function(){
 
 
 function draw(){
-	counter = frameCount%columns;
+
+	if(started){
+		counter = 0
+		started = false;
+	}else{
+		counter += 1;
+		counter = counter % columns;
+	}
+
+	// counter = frameCount%columns;
 	for(i=0;i<instruments.length;i++){
 		var currThumb = instruments[i].thumb;
 		if(instruments[i].out && instruments[i].notes.off[currThumb][counter]){
@@ -558,7 +610,9 @@ function draw(){
 
 	}
 	$('.step').removeClass('current');
+	if(!stopcounter){
 	allRows = $('.step:eq('+counter+')', '.row').toggleClass('current');
+	}
 }
 
 
