@@ -65,13 +65,21 @@
 								<option>Minor Scale</option>
 								<option>Blues Scale</option>
 								<option>Full Grid</option>
-								<option>Chords</option>
 								</select>
 							</p>
+							<p>
+
 							<div class="preset-extras">
                 <p>How many notes?
                   <input type="number" id ="rowCount" min=> <br />
                 </p>
+								<select id='octave'>
+									<option>Low, Mid, Or Hi</option>
+									<option>Low</option>
+									<option>Mid</option>
+									<option>Hi</option>
+									</select>
+								</p>
               </div>
 							<div class="modal-footer inst">
 		  					<p>
@@ -89,7 +97,7 @@
 				<button id="startstop" class="buttonbar">Start!</button>
 
 				<input type="number" step='1.0' id ="tempo" class="buttonbar" value="120">
-				<button id="clearall" class="buttonbar">clear 'em all</button>
+				<!-- <button id="clearall" class="buttonbar">clear 'em all</button> -->
 				<button id="clearcurrent" class="buttonbar">clear this one</button>
 				<select id="output" class="buttonbar" placeholder="Pick A MIDI Out">
 					<option>Pick yr MIDI out!</option>

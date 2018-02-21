@@ -2,6 +2,15 @@ body {
     padding: 20px;
     margin: 10px;
     background: linear-gradient(90deg, aqua, hotpink);
+
+}
+
+.smile{
+  background-image: url(smile.png);
+  background: transparent;
+  height: 100%;
+  width:100%;
+
 }
 
 /*li {
@@ -81,6 +90,7 @@ input {
     float: right;
     width: 100%;
     height: 100%;
+
 
 }
 
@@ -175,7 +185,7 @@ input {
 .toprow{
   margin: 5px;
   height:100px;
-  text-align: justify;
+  text-align: center;
 }
 
 .bottomrow{
@@ -389,7 +399,7 @@ z-index: 10;
 }
 
 .buttonbar{
-    width: 18.8%;
+    width: 23.5%;
     height: inherit;
     border: none;
     font-size: 18px;
@@ -462,7 +472,10 @@ ul.tabs li.selected{
     text-align: center;
     height:80px;
     margin:10px;
+}
 
+.bottombar{
+  text-align:center;
 }
 
 #startstop.started{

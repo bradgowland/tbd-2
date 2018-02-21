@@ -89,7 +89,7 @@ io.on('connection', function(socket){
       	labels: [],
       	rows: 0,
       	melodic: 1
-      }));
+      },45));
       sessions[roomIndex].onConnection(socket);
 
       // get created time
@@ -265,7 +265,7 @@ io.on('connection', function(socket){
   // create new instrument and correstponding grid
   socket.on('newInst',function(data){
     io.to(data.roomID).emit('newInstReturn', data);
-    sessions[getIx(data.roomID)].instruments.push(new TBDinstrument(data.name,data.rows,32,data.type));
+    sessions[getIx(data.roomID)].instruments.push(new TBDinstrument(data.name,data.rows,32,data.type,data.root));
     createLog(data.roomID, new Date(), "new isntrument", data.user);
   });
 
@@ -379,11 +379,12 @@ function createGrid(rows,columns){
 }
 
 // instrument object
-function TBDinstrument(name, rows, cols, type){
+function TBDinstrument(name, rows, cols, type, root){
 	this.rows = rows;
 	this.cols = cols;
 	this.name = name;
   this.type = type;
+  this.root = root;
   if(type.rows){
     this.rows = type.rows;
   }

@@ -45,4 +45,4 @@ var polyphonic = {
 	melodic: 1
 }
 
-var presets = [drums,majorScale,minorScale,bluesScale,fullGrid,polyphonic];
+var presets = [drums,majorScale,minorScale,bluesScale,fullGrid];
