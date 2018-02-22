@@ -256,12 +256,12 @@ io.on('connection', function(socket){
 
         }
       }
-      createLog(data.roomID, new Date(), data.user, "step chord");
+      createLog(data.roomID, new Date(), "step chord", data.user);
     } else if (data.mousemode === 1) {
       data.state = '';
       sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = data.state;
       io.to(data.roomID).emit('stepreturn', data);
-      createLog(data.roomID, new Date(), data.user, "step erased");
+      createLog(data.roomID, new Date(), "step erased", data.user);
     } else {
       if (data.flipped) {
         sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = 'on';
