@@ -143,6 +143,7 @@ io.on('connection', function(socket){
       userThatClicked.push(data.user);
       console.log(' User '+data.user+'clicked ',data.column);
       start.push(data.column);
+
     }
 
     if(data.state === ''){
@@ -252,6 +253,9 @@ io.on('connection', function(socket){
       io.to(data.roomID).emit('stepreturn', data);
       createLog(data.roomID, new Date(), data.user, "step erased");
     } else {
+      if(data.shifted){
+        data.state = 'onoff'
+      }
       if (data.flipped) {
         sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = 'on';
       } else {
