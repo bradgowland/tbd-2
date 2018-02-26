@@ -24,12 +24,18 @@ var userThatClicked = [];
 
 app.use(express.static('public'));
 
-// dynamic url for rooms
+// homepage
 app.get('/', function(req, res){
   res.sendFile(__dirname + '/public/index.html');
-  // TODO: can delete later, just a test
   console.log('homepage connection test');
 });
+
+// setup page
+app.get('/setup', function(req, res){
+  res.sendFile(__dirname + '/public/setup.html');
+});
+
+// dynamic url for rooms
 app.get('/:dynamicroute', function(req,res) {
   res.sendFile(__dirname + '/public/app.html')
 });
