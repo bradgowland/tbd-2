@@ -165,7 +165,7 @@ $(document).ready(function(){
 
 		note = instruments[currentGridIndex].type.midiNotes[rowNum-1-note]
 
-		if(instruments[currentGridIndex].out && midiOut && note){
+		if(instruments[currentGridIndex].out && midiOut && note && stopcounter && !clear){
 			midiOut.playNote(note,instruments[currentGridIndex].out);
 			midiOut.stopNote(note,instruments[currentGridIndex].out,{time: '+500'});
 		}
@@ -333,11 +333,19 @@ $(document).ready(function(){
 	$(".newInsButton").click(function(){
 		var instName = $("#insName").val();
 		var rowCount = $("#rowCount").val();
-		if(octave > -1){
-		var thisRoot = rootNote[octave];
-	}else{
-		thisRoot = rootNote[1];
-	}
+		if(rowCount > 128){
+			rowCount = 128;
+		}else if(rowCount < 1){
+			rowCount = 1;
+		}
+		rowCount = Math.floor(rowCount);
+		var thisRoot = octave > -1 ? rootNote[octave] : rootNote[1];
+		console.log('rowCount:   ',rowCount);
+		rowCount = 128 < (thisRoot + rowCount) ? (128 - thisRoot) : rowCount;
+
+		console.log('thisRoot   ', thisRoot);
+
+
 		if(!rowCount || type === 0){
 			rowCount = 12;
 		}
@@ -623,6 +631,8 @@ function draw(){
 	$('.step').removeClass('current');
 	if(!stopcounter){
 	allRows = $('.step:eq('+counter+')', '.row').toggleClass('current');
+	}else{
+			midiOut.stopNote('all')
 	}
 }
 
@@ -656,7 +666,8 @@ function showTab(index){
 
 
 function stepReturn(data){
-	// console.log(data.state);
+
+	 // console.log(data.state);
 var $step = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+")  .row:eq("+data.row+") .step:eq("+data.column+")");
 var $stepthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb:eq("+data.column+")");
 if(data.mousemode === 1){
@@ -767,6 +778,13 @@ switch(data.state){
 			instruments[data.inst].update($chord[1][i],data.grid);
 		}
 
+	}
+
+	function TBDnote(inst,thumb,on,off,row){
+		this.on = on;
+		this.off = off;
+		this.row = row;
+		// for(var i = on; i <(off + 1);)
 	}
 
 
