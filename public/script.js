@@ -32,6 +32,7 @@ var chord; var $chord = [[],[]];
 var started;
 var stopcounter;
 var octave;
+var midiOut;
 $()
 function setup(){
 	frameRate(8);
@@ -45,18 +46,18 @@ WebMidi.enable(function(err){
 	}
 	//List the outputs
 	for(var i = 0; i < WebMidi.outputs.length;i++){
-		$('#output').append("<option>"+WebMidi.outputs[i].name+"</option>")
+		$('#midi').append("<option>"+WebMidi.outputs[i].name+"</option>")
 	}
 
 	// Sets instrument MIDI outs
-	$('#output').change(function(){
+	$('#midi').change(function(){
 		selectedOutput = $('option:selected', this).index()-1;
 		if(selectedOutput < 0){
-			instruments[currentGridIndex].out = 0;
+			midiOut = 0;
 		}else{
-			instruments[currentGridIndex].out = WebMidi.outputs[selectedOutput];
+			midiOut = WebMidi.outputs[selectedOutput];
 		}
-		console.log(instruments.out);
+		console.log(midiOut);
 	})
 })
 
@@ -130,7 +131,7 @@ $(document).ready(function(){
 		currentGridIndex = instruments.length-1;
 		lastIx = currentGridIndex;
 		$('.thumbs:eq('+currentGridIndex+')').addClass('selected');
-		$('.container').show();
+		$('.container').fadeIn(1000);
 	});
 
 	// initial grid and mouse states
@@ -164,9 +165,9 @@ $(document).ready(function(){
 
 		note = instruments[currentGridIndex].type.midiNotes[rowNum-1-note]
 
-		if(instruments[currentGridIndex].out && note){
-			instruments[currentGridIndex].out.playNote(note,1);
-			instruments[currentGridIndex].out.stopNote(note,1,{time: '+500'});
+		if(instruments[currentGridIndex].out && midiOut && note && stopcounter && !clear){
+			midiOut.playNote(note,instruments[currentGridIndex].out);
+			midiOut.stopNote(note,instruments[currentGridIndex].out,{time: '+500'});
 		}
 
 		// store mouse starting point
@@ -259,7 +260,7 @@ $(document).ready(function(){
 		}
 		// This sets the output so the users knows that output on their current tab...
 		if(instruments[currentGridIndex] && currentGridIndex>0){
-			$('#output').val(instruments[currentGridIndex].out.name);
+			$('#output').val('Channel '+instruments[currentGridIndex].out);
 		}else{
 			$('#output').val('Pick yr MIDI out!');
 		}
@@ -322,16 +323,29 @@ $(document).ready(function(){
 		}
 	})
 
+	$('#output').change(function(){
+		$('option:selected', this).index();
+		instruments[currentGridIndex].out = $('option:selected', this).index();
+	})
+
 
 	// create new instance from user menu specs
 	$(".newInsButton").click(function(){
 		var instName = $("#insName").val();
 		var rowCount = $("#rowCount").val();
-		if(octave > -1){
-		var thisRoot = rootNote[octave];
-	}else{
-		thisRoot = rootNote[1];
-	}
+		if(rowCount > 128){
+			rowCount = 128;
+		}else if(rowCount < 1){
+			rowCount = 1;
+		}
+		rowCount = Math.floor(rowCount);
+		var thisRoot = octave > -1 ? rootNote[octave] : rootNote[1];
+		console.log('rowCount:   ',rowCount);
+		rowCount = 128 < (thisRoot + rowCount) ? (128 - thisRoot) : rowCount;
+
+		console.log('thisRoot   ', thisRoot);
+
+
 		if(!rowCount || type === 0){
 			rowCount = 12;
 		}
@@ -424,8 +438,8 @@ $(document).ready(function(){
 			loop();
 		}else{
 			for(var i = 0; i < instruments.length; i++){
-				if(instruments[i].out){
-					instruments[i].out.stopNote('all',1)
+				if(instruments[i].out && midiOut){
+					midiOut.stopNote('all',instruments[i].out)
 				}
 				$('.step').removeClass('current');
 
@@ -471,6 +485,11 @@ $(document).ready(function(){
 		var $gridThumbs = $('.grid.little');
 		$gridThumbs.removeClass('selected')
 		var $thumb = $(this);
+		console.log(currentThumb);
+		if(instruments[currentGridIndex].out && midiOut){
+			midiOut.stopNote('all',instruments[currentGridIndex].out);
+			console.log('Notes should have stopped');
+		}
 		currentThumb = $thumb.index();
 		instruments[currentGridIndex].thumb = currentThumb;
 		$('.tab-content.selected .grid').hide();
@@ -580,9 +599,9 @@ $(document).on('mousedown','.rowlabel',function(){
 	var note = $(this).index();
 	var rowNum = instruments[currentGridIndex].rows;
 	note = instruments[currentGridIndex].type.midiNotes[rowNum-1-note]
-	if(instruments[currentGridIndex].out){
-		instruments[currentGridIndex].out.playNote(note,1);
-		instruments[currentGridIndex].out.stopNote(note,1,{time: '+500'});
+	if(instruments[currentGridIndex].out && midiOut){
+		midiOut.playNote(note,instruments[currentGridIndex].out);
+		midiOut.stopNote(note,instruments[currentGridIndex].out,{time: '+500'});
 	}
 });
 
@@ -600,18 +619,20 @@ function draw(){
 	// counter = frameCount%columns;
 	for(i=0;i<instruments.length;i++){
 		var currThumb = instruments[i].thumb;
-		if(instruments[i].out && instruments[i].notes.off[currThumb][counter]){
-			instruments[i].out.stopNote(instruments[i].notes.off[currThumb][counter],1);
+		if(instruments[i].out && midiOut && instruments[i].notes.off[currThumb][counter]){
+			midiOut.stopNote(instruments[i].notes.off[currThumb][counter],instruments[i].out);
 		}
 
-		if(instruments[i].out && instruments[i].notes.on[currThumb][counter]){
-			instruments[i].out.playNote(instruments[i].notes.on[currThumb][counter],1);
+		if(instruments[i].out && midiOut && instruments[i].notes.on[currThumb][counter]){
+			midiOut.playNote(instruments[i].notes.on[currThumb][counter],instruments[i].out);
 		}
 
 	}
 	$('.step').removeClass('current');
 	if(!stopcounter){
 	allRows = $('.step:eq('+counter+')', '.row').toggleClass('current');
+	}else{
+			midiOut.stopNote('all')
 	}
 }
 
@@ -645,7 +666,8 @@ function showTab(index){
 
 
 function stepReturn(data){
-	// console.log(data.state);
+
+	 // console.log(data.state);
 var $step = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+")  .row:eq("+data.row+") .step:eq("+data.column+")");
 var $stepthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb:eq("+data.column+")");
 if(data.mousemode === 1){
@@ -756,6 +778,13 @@ switch(data.state){
 			instruments[data.inst].update($chord[1][i],data.grid);
 		}
 
+	}
+
+	function TBDnote(inst,thumb,on,off,row){
+		this.on = on;
+		this.off = off;
+		this.row = row;
+		// for(var i = on; i <(off + 1);)
 	}
 
 

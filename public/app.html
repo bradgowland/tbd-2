@@ -35,7 +35,13 @@
 		<!-- Outer Container -->
 		<div class="container">
 			<div class="topBar">
+				<div class='banner'>
 				<div class="bold_text">tbd 2</div>
+
+				<select id="midi" placeholder="Pick A MIDI Out">
+					<option>Pick yr MIDI out!</option>
+				</select>
+			</div>
 				<!-- New Instrument Panel -->
 				<div id="tab-spot">
 				<!-- Nav tabs -->
@@ -56,7 +62,7 @@
 						</div>
 
 							<p>What is the name?
-							<input type="text" id="insName"> <br /></p>
+							<input type="text" id="insName" pattern="[A-Za-z]{20}"> <br /></p>
 							<p>
 							<select id='presets'>
 								<option>Try a preset</option>
@@ -64,14 +70,15 @@
 								<option>Major Scale</option>
 								<option>Minor Scale</option>
 								<option>Blues Scale</option>
-								<option>Full Grid</option>
+								<option>Chromatic</option>
+								<option>Harmonic Minor</option>
 								</select>
 							</p>
 							<p>
 
 							<div class="preset-extras">
                 <p>How many notes?
-                  <input type="number" id ="rowCount" min=> <br />
+                  <input type="number" value="30" id ="rowCount" step="1" min="1" max="128"> <br />
                 </p>
 								<select id='octave'>
 									<option>Low, Mid, Or Hi</option>
@@ -101,6 +108,22 @@
 				<button id="clearcurrent" class="buttonbar">clear this one</button>
 				<select id="output" class="buttonbar" placeholder="Pick A MIDI Out">
 					<option>Pick yr MIDI out!</option>
+					<option>Channel 1</option>
+					<option>Channel 2</option>
+					<option>Channel 3</option>
+					<option>Channel 4</option>
+					<option>Channel 5</option>
+					<option>Channel 6</option>
+					<option>Channel 7</option>
+					<option>Channel 8</option>
+					<option>Channel 9</option>
+					<option>Channel 10</option>
+					<option>Channel 11</option>
+					<option>Channel 12</option>
+					<option>Channel 13</option>
+					<option>Channel 14</option>
+					<option>Channel 15</option>
+					<option>Channel 16</option>
 				</select>
 			</div>
 
@@ -112,8 +135,20 @@
 					<option>Eraser</option>
 					<option>Chords</option>
 				</select>
-
-
+				<select id="key" class='reverse'>
+					<option>A maj / f# min</option>
+					<option>A# maj / g min</option>
+					<option>B maj / g# min</option>
+					<option>C maj / a min</option>
+					<option>C# maj / a# min</option>
+					<option>D maj / b min</option>
+					<option>D# maj / c min</option>
+					<option>E maj / c# min</option>
+					<option>F maj / d min</option>
+					<option>F# maj / d# min</option>
+					<option>G maj / e min</option>
+					<option>G# maj / e# min</option>
+				</select>
 				<div>
 					<div class="toprow"></div>
 					<div class="bottomrow"></div>

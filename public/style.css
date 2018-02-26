@@ -13,6 +13,11 @@ body {
 
 }
 
+#midi{
+  float: right;
+  height: 100%;
+}
+
 /*li {
     padding: 5px 10px;
     font: 20px Helvetica;
@@ -293,6 +298,9 @@ z-index: 10;
     -moz-user-select: none;     /* Firefox all */
     -ms-user-select: none;      /* IE 10+ */
     user-select: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .step {
@@ -420,6 +428,8 @@ z-index: 10;
 
 }
 
+
+
 .tab-link.selected{
     background-color: hotpink;
     border-top-left-radius: 25%;
@@ -428,6 +438,24 @@ z-index: 10;
     border-bottom-right-radius: 0%;
     border: solid 1px white;
     padding: 6px;
+    color:blue;
+}
+
+.tab-link{
+  background-color: lightgrey;
+  border-top-left-radius: 25%;
+  border-top-right-radius: 25%;
+  border-bottom-left-radius: 0%;
+  border-bottom-right-radius: 0%;
+  border: solid 1px white;
+  padding: 6px;
+  color:blue;
+
+}
+
+.tab-link:hover{
+  color:white;
+  text-shadow: 1px 1px blue;
 }
 
 .deletetab{
@@ -451,7 +479,10 @@ ul.tabs li{
     color: #222;
     display: inline-block;
     padding: 5px 5px;
+    padding-left: 0px;
+    padding-right:0px;
     cursor: pointer;
+
 }
 
 ul.tabs li.selected{

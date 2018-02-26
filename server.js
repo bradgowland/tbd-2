@@ -94,13 +94,13 @@ io.on('connection', function(socket){
 
       roomIndex = sessions.push(new session(roomID,socket));
       roomIndex -= 1;
-      sessions[roomIndex].instruments.push( new TBDinstrument('TBD',20,32,{
+      sessions[roomIndex].instruments.push( new TBDinstrument('TBD',60,32,{
       	midiNotes: [],
-      	scale: [0,2,4,5,7,9,11],
+      	scale: [0,1,2,3,4,5,6,7,8,9,10,11],
       	labels: [],
       	rows: 0,
       	melodic: 1
-      },45));
+      },60)); 
       sessions[roomIndex].onConnection(socket);
 
       // get created time
@@ -154,6 +154,7 @@ io.on('connection', function(socket){
       userThatClicked.push(data.user);
       console.log(' User '+data.user+'clicked ',data.column);
       start.push(data.column);
+
     }
 
     if(data.state === ''){
@@ -263,6 +264,9 @@ io.on('connection', function(socket){
       io.to(data.roomID).emit('stepreturn', data);
       createLog(data.roomID, new Date(), "step erased", data.user);
     } else {
+      if(data.shifted){
+        data.state = 'onoff'
+      }
       if (data.flipped) {
         sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = 'on';
       } else {
