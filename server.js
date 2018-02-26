@@ -83,13 +83,13 @@ io.on('connection', function(socket){
 
       roomIndex = sessions.push(new session(roomID,socket));
       roomIndex -= 1;
-      sessions[roomIndex].instruments.push( new TBDinstrument('TBD',30,32,{
+      sessions[roomIndex].instruments.push( new TBDinstrument('TBD',60,32,{
       	midiNotes: [],
       	scale: [0,1,2,3,4,5,6,7,8,9,10,11],
       	labels: [],
       	rows: 0,
       	melodic: 1
-      },30));
+      },60)); 
       sessions[roomIndex].onConnection(socket);
 
       // get created time

@@ -37,6 +37,8 @@ for(var h = 0;h < 4; h++){
 		// console.log(this.rows);
 	}
 
+	this.rootNote = type.minor ? this.rootNote - 3 : this.rootNote;
+
 	if(type.melodic){
 		console.log('Generating scale!');
 		var scaleLen = type.scale.length;
@@ -113,6 +115,7 @@ this.gridReversed = function(grid,index,gridix){
 			var connection = i === 0 ? true:false;
 			for (var j = 0; j<grid[0].length;j++){
 				for (var k = 0; k < columns; k++) {
+					if(grid[i][j][k].state){
 					var currCell = {
 						inst: index,
 						row: j,
@@ -122,6 +125,7 @@ this.gridReversed = function(grid,index,gridix){
 						connection: connection
 					}
 					stepReturn(currCell);
+				}
 					}
 				}
 			}

@@ -18,7 +18,8 @@ var minorScale = {
 	scale: [0,2,3,5,7,8,10],
 	labels: [],
 	rows: 0,
-	melodic: 1
+	melodic: 1,
+	minor: 1
 }
 
 var bluesScale = {
@@ -45,4 +46,13 @@ var polyphonic = {
 	melodic: 1
 }
 
-var presets = [drums,majorScale,minorScale,bluesScale,fullGrid];
+var harmonicMinorScale = {
+	midiNotes: [],
+	scale: [0,2,3,5,7,8,11],
+	labels: [],
+	rows: 0,
+	melodic: 1,
+	minor: 1
+}
+
+var presets = [drums,majorScale,minorScale,bluesScale,fullGrid,harmonicMinorScale];
