@@ -23,6 +23,11 @@ body {
     font: 20px Helvetica;
 }*/
 
+#ableton_download {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
 .bold_text {
     color: white;
     font-family: "Helvetica";
@@ -295,6 +300,9 @@ z-index: 10;
 .setup_img {
   margin-top: 15px;
   margin-bottom: 15px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .step.quarter{
