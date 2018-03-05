@@ -23,7 +23,7 @@ body {
     font: 20px Helvetica;
 }*/
 
-#ableton_download {
+#template_download {
   margin-top: 5px;
   margin-bottom: 5px;
 }
@@ -43,6 +43,17 @@ body {
     font-family: "Helvetica";
     font-style: italic;
     font-size: 150%;
+    text-align: left;
+    letter-spacing: 1px;
+}
+
+.nav_text {
+    color: white;
+    display: inline-block;
+    font-family: "Helvetica";
+    font-style: italic;
+    font-size: 150%;
+    margin-right: 5%;
     text-align: left;
     letter-spacing: 1px;
 }
