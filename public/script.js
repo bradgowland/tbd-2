@@ -4,7 +4,7 @@ var socket = io();
 // initialize values
 var rootNote = [21,45,69];
 // var rootNote = 45;
-var row, column, objGrid,lastCellLeft,twoCellsBack,tempo,ix,columnChanged;
+var row, column, objGrid, lastCellLeft, twoCellsBack, tempo, ix, columnChanged;
 
 var columns = 32;
 var userThatClicked = false;
@@ -44,7 +44,7 @@ WebMidi.enable(function(err){
 	if(err){
 		alert("Uh oh! Looks like WebMidi failed. Some browsers don't support WebMIDI, try Firefox or Chrome!!");
 	}
-	//List the outputs
+	// List the outputs
 	for(var i = 0; i < WebMidi.outputs.length;i++){
 		$('#midi').append("<option>"+WebMidi.outputs[i].name+"</option>")
 	}
@@ -57,6 +57,7 @@ WebMidi.enable(function(err){
 		}else{
 			midiOut = WebMidi.outputs[selectedOutput];
 		}
+		// set output for whole thing
 		console.log(midiOut);
 	})
 })
@@ -79,10 +80,10 @@ $(document).ready(function(){
 			$('#chatRoom').text(chatLabel);
 		}
 	} else {
-		// TODO: catch all for local network IPs -- take out after testing
+		// catch all for local network IPs -- take out after testing
 		var temp = url.split("").reverse();
 		roomID = temp.slice(0,temp.indexOf("/")).reverse().join("");
-
+		console.log(roomID);
 		// send roomID to server for connection
 		socket.emit('room', {roomID: roomID});
 
@@ -126,7 +127,7 @@ $(document).ready(function(){
 		// get current list of Users
 		users = data.users;
 
-		// TODO: get current tempo
+		// show session
 		showTab(instruments.length);
 		currentGridIndex = instruments.length-1;
 		lastIx = currentGridIndex;
@@ -134,9 +135,9 @@ $(document).ready(function(){
 		$('.container').fadeIn(1000);
 	});
 
-	// initial grid and mouse states
-	// var tweet = grid(rows, columns, $(".gridContainer"));
+	// initial states
 	var mouseIsClicked = false;
+
 
 	// cell click
 	$(document).on("mouseleave",'.selected .grid',function(){

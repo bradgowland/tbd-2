@@ -23,7 +23,22 @@ body {
     font: 20px Helvetica;
 }*/
 
-#template_download {
+#homepage_button {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+#ableton_download {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+#flstudio_download {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+#reaper_download {
   margin-top: 5px;
   margin-bottom: 5px;
 }

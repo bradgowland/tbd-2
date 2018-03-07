@@ -1,7 +1,6 @@
 var express = require('express');
 var app = express();
 var http = require('http').Server(app);
-var request = require('http');
 var io = require('socket.io')(http);
 var normalizeSocket = require("normalize-port");
 var port = normalizeSocket(process.env.PORT || "8081");
@@ -27,7 +26,6 @@ app.use(express.static('public'));
 // homepage
 app.get('/', function(req, res){
   res.sendFile(__dirname + '/public/index.html');
-  console.log('homepage connection test');
 });
 
 // setup page
@@ -39,13 +37,6 @@ app.get('/setup', function(req, res){
 app.get('/:dynamicroute', function(req,res) {
   res.sendFile(__dirname + '/public/app.html')
 });
-
-// keep heroku from going to sleep
-setInterval(function() {
-    request.get('http://tbd.zone/');
-    // TODO: can delete later, just a test
-    console.log('ping to keep app awake');
-}, 300000);
 
 // check every five minutes for cleaning up old rooms, update db logs
 setInterval(function() {
@@ -90,25 +81,69 @@ io.on('connection', function(socket){
 
     // instantiate new session or return existing session
     roomIndex = rooms.indexOf(roomID);
+    if (roomID.includes("ableton-") || roomID.includes("flstudio-") || roomID.includes("reaper-")) {
+      var daw = true;
+    }
+    // retrieve existing session
     if (roomIndex > -1) {
         sessions[roomIndex].onConnection(socket);
         console.log('We found ',roomID);
         createLog(roomID, new Date(), "room accessed");
+    // start new session
     } else {
       rooms.push(roomID);
       console.log('Creating ', roomID);
 
-      roomIndex = sessions.push(new session(roomID,socket));
-      roomIndex -= 1;
-      sessions[roomIndex].instruments.push( new TBDinstrument('TBD',60,32,{
-      	midiNotes: [],
-      	scale: [0,1,2,3,4,5,6,7,8,9,10,11],
-      	labels: [],
-      	rows: 0,
-      	melodic: 1
-      },60)); 
-      sessions[roomIndex].onConnection(socket);
+      // start regular session
+      if (!daw) {
+        roomIndex = sessions.push(new session(roomID,socket));
+        roomIndex -= 1;
+        sessions[roomIndex].instruments.push( new TBDinstrument('TBD',60,32,{
+        	midiNotes: [],
+        	scale: [0,1,2,3,4,5,6,7,8,9,10,11],
+        	labels: [],
+        	rows: 0,
+        	melodic: 1
+        },60));
+        sessions[roomIndex].onConnection(socket);
+      // start DAW session
+      } else {
+        roomIndex = sessions.push(new session(roomID,socket));
+        roomIndex -= 1;
+        // drums
+        sessions[roomIndex].instruments.push(new TBDinstrument('drums',12,32,{
+          midiNotes: [36,38,40,39,42,44,46,47,45,49,51,56],
+          labels:['kick','snare','snare2','clap','closed hat','pedal hat','open hat','mid tom','low tom','crash','ride','bell'],
+          rows: 12,
+          melodic: 0
+        },60));
+        // bass
+        sessions[roomIndex].instruments.push(new TBDinstrument('bass',12,32,{
+          midiNotes: [],
+        	scale: [0,1,2,3,4,5,6,7,8,9,10,11],
+        	labels: [],
+        	rows: 0,
+        	melodic: 1
+        },60));
+        // arp
+        sessions[roomIndex].instruments.push(new TBDinstrument('arp',12,32,{
+          midiNotes: [],
+        	scale: [0,1,2,3,4,5,6,7,8,9,10,11],
+        	labels: [],
+        	rows: 0,
+        	melodic: 1
+        },60));
+        // pad
+        sessions[roomIndex].instruments.push(new TBDinstrument('pad',12,32,{
+          midiNotes: [],
+        	scale: [0,1,2,3,4,5,6,7,8,9,10,11],
+        	labels: [],
+        	rows: 0,
+        	melodic: 1
+        },60));
 
+        sessions[roomIndex].onConnection(socket);
+      }
       // get created time
       sessions[getIx(roomID)].created = new Date();
       console.log("New room created at ", new Date(sessions[getIx(roomID)].created));
@@ -411,10 +446,10 @@ function TBDinstrument(name, rows, cols, type, root){
   }
   this.grid = [];
   // TODO: delete when we're done fixing up on/off grids
-for(i=0;i<4;i++){
-  this.grid.push(createGrid(this.rows,cols));
-}
-this.clear = function(ix){
+  for(i=0;i<4;i++){
+    this.grid.push(createGrid(this.rows,cols));
+  }
+  this.clear = function(ix){
     this.grid[ix] = createGrid(this.rows,cols);
   }
 
@@ -432,7 +467,6 @@ this.clear = function(ix){
   this.reversey = function(ix){
     this.grid[ix].reverse();
   }
-	// Create the polarity grid for click/unclick
 
 }
 
