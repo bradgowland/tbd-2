@@ -53,6 +53,14 @@ body {
     text-shadow: 3px 2px black;
 }
 
+.intro_text {
+  color: white;
+  font-family: "Helvetica";
+  font-size: 250%;
+  text-align: center;
+  letter-spacing: 0px;
+}
+
 .ital_text {
     color: white;
     font-family: "Helvetica";
@@ -632,12 +640,4 @@ ul.tabs li.selected{
   width: 33%;
   height: 50%;
   text-align: center;
-}
-
-.intro_text {
-  color: white;
-  font-family: "Helvetica";
-  font-size: 250%;
-  text-align: center;
-  letter-spacing: 0px;
 }
