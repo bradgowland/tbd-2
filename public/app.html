@@ -15,21 +15,27 @@
 	</head>
 	<body>
 		<div id="userPicker" class="modal fade" role="dialog" data-backdrop="static" data-keyboard="false">
-		  <div class="modal-dialog">
+			<form>
+			<div class="modal-dialog">
 		    <!-- Modal content-->
-		    <div class="modal-content">
+			  <div class="modal-content">
 		      <div class="modal-header">
 		        <h4 class="modal-title">tbd 2</h4>
 		      </div>
 		      <div class="modal-body">
 		        <div id="greeting">Pick a username for the sesh!</div>
 		        <div><input id="username" type="text" placeholder="enter a username"></input></div>
-		      </div>
+						<select style="visibility:hidden">
+							<option style="background-color:red">Yo</option>
+
+						</select>
+					</div>
 		      <div class="modal-footer">
-		        <button id="roomButton" type="submit" class="btn btn-default" data-dismiss="modal">Go!</button>
+		        <input id="roomButton" type="submit" class="btn btn-default" value="Let us go!" data-dismiss="modal"></input>
 		      </div>
 		    </div>
 		  </div>
+		</form>
 		</div>
 
 		<!-- Outer Container -->
@@ -67,7 +73,7 @@
 							<select id='presets'>
 								<option>Try a preset</option>
 								<option>Drums</option>
-								<option>Major Scale</option>
+								<option style="background-color:red;">Major Scale</option>
 								<option>Minor Scale</option>
 								<option>Blues Scale</option>
 								<option>Chromatic</option>
@@ -81,7 +87,7 @@
                   <input type="number" value="30" id ="rowCount" step="1" min="1" max="128"> <br />
                 </p>
 								<select id='octave'>
-									<option>Low, Mid, Or Hi</option>
+									<option>Pick a range:</option>
 									<option>Low</option>
 									<option>Mid</option>
 									<option>Hi</option>
@@ -105,9 +111,9 @@
 
 				<input type="number" step='1.0' id ="tempo" class="buttonbar" value="120">
 				<!-- <button id="clearall" class="buttonbar">clear 'em all</button> -->
-				<button id="clearcurrent" class="buttonbar">clear this one</button>
+				<button id="clearcurrent" class="buttonbar">Clear</button>
 				<select id="output" class="buttonbar" placeholder="Pick A MIDI Out">
-					<option>Pick yr MIDI out!</option>
+					<option>Select a Channel</option>
 					<option>Channel 1</option>
 					<option>Channel 2</option>
 					<option>Channel 3</option>
