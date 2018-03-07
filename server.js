@@ -18,6 +18,7 @@ var clients = [];
 var roomID = "";
 var roomIndex = -1;
 var start = [];
+var selectedStep,clickOffset;
 
 var userThatClicked = [];
 
@@ -176,13 +177,18 @@ io.on('connection', function(socket){
   });
 
 
-
+  var offix;
   // distribute user step changes
   socket.on('step', function(data){
+    // console.log(data.state)
     data.onleft = false;
     data.onright = false;
     if(data.mousemode === 1){
       data.state = '';
+    }
+    data.state = data.shifted ? 'onoff':data.state;
+    if(data.state === 'onoff'){
+      sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].push(new TBDnote(data.column,data.column,data));
     }
 
     // flipped = false;
@@ -193,13 +199,15 @@ io.on('connection', function(socket){
         start.splice(doubleCheck,1);
       }
       userThatClicked.push(data.user);
-      console.log(' User '+data.user+'clicked ',data.column);
+      // console.log(' User '+data.user+'clicked ',data.column);
       start.push(data.column);
 
     }
 
+
+
     if(data.state === ''){
-      //left of this cell
+      //left of this cell.
       if(data.column>0){
       var left = sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state;
         switch(left){
@@ -236,8 +244,7 @@ io.on('connection', function(socket){
     }
 
     if (data.state === 'off') {
-      var offix = userThatClicked.indexOf(data.user);
-
+      offix = userThatClicked.indexOf(data.user);
       if (data.column === start[offix]) {
         data.state = 'onoff';
       } else {
@@ -246,17 +253,37 @@ io.on('connection', function(socket){
         if(data.flipped){
           sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][start[offix]].state = 'off';
         } else {
+          if(start[offix]){
           sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][start[offix]].state = 'on';
         }
+        }
       }
+      sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].push(new TBDnote(start[offix],data.column,data));
 
       // log event
-      console.log("step logged");
       createLog(data.roomID, new Date(), "step change", data.user, Math.abs(start[offix] - data.column)+1, data.inst);
 
       // clean up
       userThatClicked.splice(offix,1);
       start.splice(offix,1);
+    }
+
+    if(data.state === 'move'){
+      if(data.grab){
+        selectedStep= sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].findIndex(function(el){
+          return (el.row === data.row) && (el.on <= data.column) && (el.off >= data.column)
+        });
+        clickOffset = data.column - sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][selectedStep].on;
+
+      }
+      data.offset = clickOffset;
+
+
+      if(selectedStep > -1){
+
+        sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][selectedStep].move(data);
+        // console.log(sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][selectedStep]);
+      }
     }
     if(data.mousemode === 2) {
       for(i=0;i<3;i++){
@@ -306,17 +333,26 @@ io.on('connection', function(socket){
       createLog(data.roomID, new Date(), "step erased", data.user);
     } else {
       if(data.shifted){
-        data.state = 'onoff'
+        data.state = 'onoff';
       }
       if (data.flipped) {
         sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = 'on';
       } else {
+        if(data.state != 'move'){
         sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = data.state;
       }
+      }
       // send step to clients
+
       io.to(data.roomID).emit('stepreturn', data);
+
     }
   });
+
+  socket.on('delete step',function(data){
+      sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].splice(data.noteIx,1);
+      io.to(data.roomID).emit('delete step return', data);
+  })
 
   // create new instrument and correstponding grid
   socket.on('newInst',function(data){
@@ -441,6 +477,8 @@ function TBDinstrument(name, rows, cols, type, root){
 	this.name = name;
   this.type = type;
   this.root = root;
+  this.out;
+  this.steps = [[],[],[],[]];
   if(type.rows){
     this.rows = type.rows;
   }
@@ -468,6 +506,29 @@ function TBDinstrument(name, rows, cols, type, root){
     this.grid[ix].reverse();
   }
 
+}
+
+function TBDnote(startpos,endpos,data){
+  if(data.flipped){
+    this.off = startpos;
+    this.on = endpos
+  }else{
+  this.on = startpos;
+  this.off = endpos;
+  }
+  this.data = {
+    inst: data.inst,
+    grid: data.grid,
+    row:data.row
+  }
+  this.len = Math.abs(endpos - startpos);
+  this.row = data.row;
+  this.move = function(data){
+    this.row = data.row;
+    this.on = data.column-data.offset;
+    this.off = this.on + this.len;
+    this.data.row = data.row;
+  }
 }
 
 // session object

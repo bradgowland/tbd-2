@@ -1,34 +1,35 @@
 var noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 
-//stepObj
-function TBDstep(row,start,stop){
-	this.on = start;
-	this.off = stop;
-	this.row = row;
-}
+
+
+
+
 
 function TBDgrid(name, rows, cols,type, root){
 	this.rows = rows;
 	this.cols = cols;
 	this.thumb = 0;
 	this.name = name;
+	this.steps = [[],[],[],[]]
+	this.refreshSteps = function(currThumb){
+		this.steps[currThumb].forEach(function(el){
+			el.update();
+		})
+	}
 	this.rootNote = root;
 	this.notes = {
 		on: [],
 		off: []
 	}
 
-for(var h = 0;h < 4; h++){
-		this.notes.on.push([]);
-		this.notes.off.push([]);
-		for(var i = 0; i<columns; i++){
-			this.notes.on[h].push([]);
-			this.notes.off[h].push([]);
-		}
-}
-
-
-
+	for(var h = 0;h < 4; h++){
+			this.notes.on.push([]);
+			this.notes.off.push([]);
+			for(var i = 0; i<columns; i++){
+				this.notes.on[h].push([]);
+				this.notes.off[h].push([]);
+			}
+	}
 
 	this.out=0;
 	this.type = type;
@@ -131,6 +132,29 @@ this.gridReversed = function(grid,index,gridix){
 			}
 		}
 
+	this.connect = function(steps){
+
+
+	}
+
+	this.getNotes = function(thing){
+			var midiVal = this.type.midiNotes[this.rows - 1 - thing.row];
+			var onIndex = this.notes.on[thing.grid][thing.on].indexOf(midiVal);
+			//This check prevent duplicates in the note on array...
+			onIndex === -1 ? this.notes.on[thing.grid][thing.on].push(midiVal):console.log('Midi value ', midiVal, 'already here') ;
+			this.notes.off[thing.grid][(thing.off+1)%32].push(midiVal);
+	}
+
+	this.removeNotes = function(thing){
+		var midiVal = this.type.midiNotes[this.rows - 1 - thing.row];
+		var onIndex = this.notes.on[thing.grid][thing.on].indexOf(midiVal);
+		var offIndex = this.notes.off[thing.grid][(thing.off+1)%32].indexOf(midiVal);
+		// console.log('on:  ', onIndex, 'off:  ',offIndex);
+		this.notes.on[thing.grid][thing.on].splice(onIndex,1);
+		this.notes.off[thing.grid][(thing.off+1)%32].splice(offIndex,1);
+
+	}
+
 	this.clear = function(ix){
 		this.notes.on = [];
 		this.notes.off = [];
@@ -226,6 +250,8 @@ this.gridReversed = function(grid,index,gridix){
 		gridClone.hide();
 	}
 
+
+
 	if(this.rows<39){
 	gr.parent().find(".rowlabel").css({
 	"height": h+"%"
@@ -246,6 +272,8 @@ this.gridReversed = function(grid,index,gridix){
 	for(var i = 0 ; i < 3; i++){$thumbs.append(lilGrid.clone());}
 	lilGrid.addClass('selected');
 	tr.append($thumbs);
+
+
 
 }
 

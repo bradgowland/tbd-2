@@ -31,8 +31,11 @@ var passedStart;
 var chord; var $chord = [[],[]];
 var started;
 var stopcounter;
-var octave;
+var octave, offset;
+var move;
 var midiOut;
+var noteIx;
+var grabbing = false;
 $()
 function setup(){
 	frameRate(8);
@@ -115,24 +118,33 @@ $(document).ready(function(){
 			for (var h = 0; h < data.instruments.length;h++){
 				currInst = data.instruments[h];
 				instruments.push(new TBDgrid(currInst.name,currInst.rows,currInst.cols,currInst.type,currInst.root));
-				objGrid = currInst.grid;
-				instruments[h].connection(currInst.grid,h);
-				instruments[h].connection([currInst.grid[0]],h);
+				for(i = 0; i < 4;i++){
+				if(currInst.steps[i].length){
+					for(j=0;j<currInst.steps[i].length;j++){
+						var currStep = currInst.steps[i][j];
+						instruments[h].steps[i].push(new TBDnote(currStep.on,currStep.off,currStep.data));
+						instruments[h].getNotes(getLastStep({inst: h,grid: i}));
+							}
+						}
+					}
+				}
+		}
+				// objGrid = currInst.steps;
+				// instruments[h].connection(currInst.grid,h);
+				// instruments[h].connection([currInst.grid[0]],h);
 				$('#tempo').val(data.tempo);
 				frameRate(data.tempo/15);
-			}
-
-		}
 
 		// get current list of Users
 		users = data.users;
-
+    
 		// show session
 		showTab(instruments.length);
 		currentGridIndex = instruments.length-1;
 		lastIx = currentGridIndex;
 		$('.thumbs:eq('+currentGridIndex+')').addClass('selected');
 		$('.container').fadeIn(1000);
+		$('.gridContainer').scrollTop(400);
 	});
 
 	// initial states
@@ -142,62 +154,71 @@ $(document).ready(function(){
 	// cell click
 	$(document).on("mouseleave",'.selected .grid',function(){
 		mouseIsClicked = false;
-	})
+	});
 
 	$(document).on("mousedown",'.selected .row .step',function(){
 		//Sets whether pencil will be erasing or drawing
 		passedStart = false;
 		reversing = false;
 		columnChanged = false;
+		clear = false;
 		lastCellLeft = 0;
 		twoCellsBack = -1;
 
-		clear = $(this).hasClass('clicked') ? true : false;
-		// console.log('Youre reversing ',reversing);
-		// console.log('Youre clearing ',reversing);
+		//Flag for if client is moving a note...
+		move = $(this).hasClass('clicked') ? true : false;
 		mouseIsClicked = true;
-		//Grab current coordinates
+
 		row = $(this).parent().index();
 		column = $(this).index();
-
-		var note = row;
-
+		//Audition notes on click
 		var rowNum = instruments[currentGridIndex].rows;
-
-		note = instruments[currentGridIndex].type.midiNotes[rowNum-1-note]
-
+		var note = instruments[currentGridIndex].type.midiNotes[rowNum-1-row]
 		if(instruments[currentGridIndex].out && midiOut && note && stopcounter && !clear){
 			midiOut.playNote(note,instruments[currentGridIndex].out);
 			midiOut.stopNote(note,instruments[currentGridIndex].out,{time: '+500'});
 		}
-
 		// store mouse starting point
 		start = column;
 		// set state to the proper mode
-		state = clear || mousemode == 1 ? '' :  'on';
-
-		sendStep(state);
+		if(move){
+			grabNote();
+			$('.grid .selected').addClass('grabbing')
+		}else{
+			state = mousemode === 1 ? '' :  'on';
+			sendStep(state);
+		}
 	//Remember previous cell for turning around
 }).on("mouseleave",'.selected .row .step',function(){
-			if(mouseIsClicked && !clear){
+			if(mouseIsClicked){
 				// only do this if we have in fact left any cells
 				if(lastCellLeft && columnChanged){
 					twoCellsBack = lastCellLeft;
 				}
 				column = $(this).index();
-				passedStart = reversing && column === start ? true:false;
+				passedStart = reversing && (column === start) ? true:false;
 				if(columnChanged){
 				lastCellLeft=column;
 			}
+
+				if(reversing){
+					state = clear || reversing ? '' : 'sus';
+					sendStep(state);
+
+				}
 			}
 		}).on("mouseenter", '.selected .row .step',function(){
 		if(mouseIsClicked){
 			columnChanged = column === $(this).index() ? false : true;
+
 			if(passedStart){
+				//This clears the starting cell when you are reversing
 				clear = true;
 				reversing = false;
 			}
-			if($(this).index() === twoCellsBack){
+			column = $(this).index();
+
+			if((column === twoCellsBack) && (!move)){
 				reversing = reversing ? false : true;
 				//maybe just set clear to true???
 				//sets cell to off if user goes back from whence he came
@@ -205,36 +226,74 @@ $(document).ready(function(){
 				state = reversing ? '' : 'sus';
 				sendStep(state);
 			}
-			column = $(this).index();
+
+
 		if(mousemode === 1){
+			//There are no row limitations on the eraser mode
 			row = $(this).parent().index();
 			state = '';
 			sendStep(state);
 		}
 
-		if(mousemode === 0 || mousemode === 2){
+		if(move){
+			row = $(this).parent().index();
+			sendStep('move');
+		}else if((mousemode === 0 || mousemode === 2)){
+			column = $(this).index();
 			state = clear || reversing ? '' : 'sus';
-			sendStep(state);
+			sendStep('sus');
 		}
 		}
 	}).on("mouseup",'.row .step',function(){
 		mouseIsClicked = false;
 		column = $(this).index();
-		state = clear || reversing ? '' : 'off';
-		sendStep(state);
-
-		if(reversing && !clear && mousemode != 1){
-			sendStep('off');
-			sendStep('');
+		// state = clear || reversing ? '' : 'off';
+		if(!shifted){
+		move ? releaseNote() : sendStep('off');
 		}
+
 		reversing = false;
 		clear = false;
 	});
+
+
 
 	// update steps from all users
 	socket.on('stepreturn',function(data){
 		stepReturn(data);
 	});
+
+	$(document).on("mouseover",".step.clicked",function(){
+		var $step = $(this);
+		var thisCol = $step.index();
+		var highlight= instruments[currentGridIndex].steps[currentThumb].findIndex(function(el){
+			return (el.row === $step.parent().index()) && (el.on <= thisCol) && (el.off >= thisCol)
+		});
+			if(highlight > -1){
+				instruments[currentGridIndex].steps[currentThumb][highlight].$els.addClass('highlighted');
+			}
+		}).on("mousedown",".clicked",function(){
+			var $step = $(this);
+			var thisCol = $step.index();
+			if(currentGridIndex > -1){
+			noteIx = instruments[currentGridIndex].steps[currentThumb].findIndex(function(el){
+				return (el.row === $step.parent().index()) && (el.on <= thisCol) && (el.off >= thisCol)
+			});
+		}
+
+		$('.selected .row .step').removeClass('selected');
+				// instruments[currentGridIndex].steps[currentThumb][noteIx].$els.addClass('selected');
+
+		}).on("mouseleave", ".clicked",function(){
+			var $step = $(this);
+			var thisCol = $step.index();
+			var highlight = instruments[currentGridIndex].steps[currentThumb].findIndex(function(el){
+				return (el.row === $step.parent().index()) && (el.on <= thisCol) && (el.off >= thisCol)
+			});
+			if(highlight > -1){
+				instruments[currentGridIndex].steps[currentThumb][highlight].$els.removeClass('highlighted');
+			}
+		});
 
 	//The tab toggler
 
@@ -259,12 +318,14 @@ $(document).ready(function(){
 		$('.thumbs .grid').removeClass('selected');
 		$('.thumbs:eq('+currentGridIndex+') .grid:eq('+currentThumb+')').addClass('selected');
 		}
-		// This sets the output so the users knows that output on their current tab...
-		if(instruments[currentGridIndex] && currentGridIndex>0){
+		//This sets the output so the users knows that output on their current tab...
+		if(instruments[currentGridIndex] && currentGridIndex>-1){
 			$('#output').val('Channel '+instruments[currentGridIndex].out);
 		}else{
 			$('#output').val('Pick yr MIDI out!');
 		}
+
+		// $('#output option:eq('+instruments[currentGridIndex].out+')').attr('selected','selected');
 	});
 
 
@@ -282,10 +343,28 @@ $(document).ready(function(){
 		$('.tab-content:eq(1)').addClass('selected');
 
 	});
+
 	$(document).on('keyup keydown', function(e){
 		shifted = e.shiftKey;
 		alted = e.altKey;
+
 	});
+
+$(document).on('keydown', function(e){
+	if(e.keyCode === 8 && currentGridIndex > -1){
+		if(instruments[currentGridIndex].steps[currentThumb].length){
+		sendDelete();
+	}
+	}
+});
+
+socket.on('delete step return',function(data){
+	deleteNote(data);
+if(instruments[currentGridIndex].steps[currentThumb].length){
+	getLastStep(data);
+	instruments[data.inst].steps[data.grid][noteIx].select();
+}
+});
 
 //[drums,major,minor,blues,fullGrid,chords]
 	$("#presets").change(function(){
@@ -365,7 +444,7 @@ $(document).ready(function(){
 
 	socket.on('newInstReturn',function(data){
 
-		console.log(data);
+		// console.log(data);
 		instruments.push(new TBDgrid(data.name,data.rows,columns,data.type,data.root));
 		if(userThatClicked){
 			currentGridIndex = instruments.length-1;
@@ -440,7 +519,7 @@ $(document).ready(function(){
 		}else{
 			for(var i = 0; i < instruments.length; i++){
 				if(instruments[i].out && midiOut){
-					midiOut.stopNote('all',instruments[i].out)
+					midiOut.stopNote('all','all')
 				}
 				$('.step').removeClass('current');
 
@@ -633,7 +712,7 @@ function draw(){
 	if(!stopcounter){
 	allRows = $('.step:eq('+counter+')', '.row').toggleClass('current');
 	}else{
-			midiOut.stopNote('all')
+			midiOut ? midiOut.stopNote('all'): console.error("You haven't set the MIDI out!");
 	}
 }
 
@@ -667,9 +746,9 @@ function showTab(index){
 
 
 function stepReturn(data){
-
-	 // console.log(data.state);
+	// console.log(data.state)
 var $step = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+")  .row:eq("+data.row+") .step:eq("+data.column+")");
+
 var $stepthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb:eq("+data.column+")");
 if(data.mousemode === 1){
 	data.state = '';
@@ -680,29 +759,33 @@ switch(data.state){
 				if(data.onleft){
 					$left = $(".gridContainer:eq("+data.inst+")  .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+(data.column-1)+")");
 					$left.addClass('right');
-					instruments[data.inst].update($left, data.grid);
+					// instruments[data.inst].update($left, data.grid);
 				}
 				if(data.onright){
 					$right = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+(data.column+1)+")");
 					$right.addClass('left');
-					instruments[data.inst].update($right, data.grid);
+					// instruments[data.inst].update($right, data.grid);
 				}
-				instruments[data.inst].update($step, data.grid);
+				// instruments[data.inst].update($step, data.grid);
 		$stepthumb.removeClass('clicked');
 		break;
 	case 'on':
 		$step.addClass('clicked');
 
 		$start = $step;
+
 		if(data.mousemode == 2){
 			$chord[0].push($step);
 		}
+
 		$stepthumb.addClass('clicked');
 		break;
 	case 'onoff':
 		$step.addClass('clicked left right');
-		instruments[data.inst].update($step,data.grid);
+		// instruments[data.inst].update($step,data.grid);
 		$stepthumb.addClass('clicked');
+		instruments[data.inst].steps[data.grid].push(new TBDnote($step.index(),$step.index(),data));
+		instruments[data.inst].getNotes(getLastStep(data));
 		if(data.mousemode === 2){
 			$chord = [[],[]];
 		}
@@ -710,12 +793,31 @@ switch(data.state){
 	case 'sus':
 		$step.removeClass('left right');
 		$step.addClass('clicked');
-		instruments[data.inst].update($step,data.grid);
-
+		// instruments[data.inst].update($step,data.grid);
 		$stepthumb.addClass('clicked');
+		break;
+	case 'move':
+		if(data.grab){
+		noteIx = instruments[data.inst].steps[data.grid].findIndex(function(el){
+			return (el.row === data.row) && (el.on <= data.column) && (el.off >= data.column)
+		});
+		var currStep = instruments[data.inst].steps[data.grid][noteIx];
+		instruments[data.inst].removeNotes(currStep);
+		offset = data.column - instruments[data.inst].steps[data.grid][noteIx].on;
+		}
+			data.column -= offset;
 
+			instruments[data.inst].steps[data.grid][noteIx].move(data);
+
+			instruments[data.inst].refreshSteps(data.grid);
+			if(data.release){
+				$('.step').removeClass('grabbing');
+				var setNote = instruments[data.inst].steps[data.grid][noteIx];
+				instruments[data.inst].getNotes(setNote);
+			}
 		break;
 	case 'off':
+		grabbing = false;
 		if(data.mousemode == 2){
 			$chord[1].push($step);
 		}
@@ -742,14 +844,75 @@ switch(data.state){
 				if($start){$start.addClass('left clicked');
 				instruments[data.inst].update($start,data.grid);}
 				if($end){$end.addClass('right clicked');
-				instruments[data.inst].update($end,data.grid);
+				// instruments[data.inst].update($end,data.grid);
 				}
+
+				instruments[data.inst].steps[data.grid].push(new TBDnote($start.index(),$end.index(),data));
+				instruments[data.inst].getNotes(getLastStep(data));
 			}
+			// console.log('Right?  ', $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step").indexOf($start));
+
 			break;
 		}
 	}
 
-	function sendStep(state){
+
+
+function TBDnote(startpos,endpos,data){
+		this.on = startpos;
+		this.grid = data.grid;
+		this.off = endpos;
+		this.len = endpos - startpos;
+		var stepSelected = false;
+		this.row = data.row;
+		this.$start = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+startpos+")");
+		this.$end = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+endpos+")");
+		this.$els = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step").slice(this.on,this.off+1);
+		this.$startthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb:eq("+startpos+")");
+		this.$endthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb:eq("+endpos+")");
+		this.$elsthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb").slice(this.on,this.off+1);
+		this.$els.addClass('clicked');
+		this.$els.removeClass('left right');
+		this.$elsthumb.addClass('clicked');
+
+		this.$end.addClass('right');
+		this.$start.addClass('left');
+		// var display = this.$els;
+		this.move = function(data){
+			this.$els.removeClass('left right clicked selected')
+			this.$elsthumb.removeClass('clicked');
+			this.row = data.row;
+			this.on = data.column;
+			this.off = data.column + this.len;
+
+			this.$start = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+data.column+")");
+			this.$end = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+(data.column + this.len)+")");
+			this.$els = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step").slice(data.column,data.column+this.len+1);
+			this.$elsthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb").slice(this.on,this.off+1);
+			this.$els.addClass('clicked');
+			this.$start.addClass('left');
+			this.$end.addClass('right');
+			this.$els.addClass('selected grabbing');
+			this.$elsthumb.addClass('clicked');
+			// display = this.$els;
+		}
+		this.update = function(){
+			this.$els.addClass('clicked').removeClass('highlighted');
+			this.$start.addClass('left');
+			this.$end.addClass('right');
+			this.$elsthumb.addClass('clicked');
+		}
+		this.delete = function(){
+			this.$els.removeClass('clicked left right clicked highlighted selected')
+		}
+
+		this.select = function(){
+			this.$els.addClass('clicked selected')
+		}
+
+}
+
+function sendStep(state){
 		socket.emit('step',{
 			row: row,
 			column: column,
@@ -762,6 +925,53 @@ switch(data.state){
 			grid: currentThumb
 		});
 	}
+
+	function grabNote(){
+		socket.emit('step',{
+			row: row,
+			column: column,
+			inst: currentGridIndex,
+			roomID: roomID,
+			mousemode: mousemode,
+			user: user,
+			shifted: shifted,
+			state: 'move',
+			grid: currentThumb,
+			grab: true
+		});
+	}
+
+	function releaseNote(){
+		socket.emit('step',{
+			row: row,
+			column: column,
+			inst: currentGridIndex,
+			roomID: roomID,
+			mousemode: mousemode,
+			user: user,
+			shifted: shifted,
+			state: 'move',
+			grid: currentThumb,
+			release: true
+		});
+	}
+
+	function sendDelete(){
+		socket.emit('delete step',{
+			inst: currentGridIndex,
+			grid: currentThumb,
+			noteIx: noteIx,
+			roomID: roomID,
+			user: user
+		});
+	}
+
+	function deleteNote(data){
+		instruments[data.inst].removeNotes(instruments[data.inst].steps[data.grid][data.noteIx]);
+		instruments[data.inst].steps[data.grid][data.noteIx].delete();
+		instruments[data.inst].steps[data.grid].splice(data.noteIx,1)
+	}
+
 
 	function chordUpdate($chord, data){
 		$chord[0].forEach(function(element){
@@ -781,12 +991,17 @@ switch(data.state){
 
 	}
 
-	function TBDnote(inst,thumb,on,off,row){
-		this.on = on;
-		this.off = off;
-		this.row = row;
-		// for(var i = on; i <(off + 1);)
-	}
+function getLastStep(data){
+	noteIx = instruments[data.inst].steps[data.grid].length;
+	noteIx -= 1;
+	var thisStep = instruments[data.inst].steps[data.grid][noteIx];
+	return thisStep
+}
+
+
+
+
+
 
 
 
