@@ -23,11 +23,31 @@ body {
     font: 20px Helvetica;
 }*/
 
+#homepage_button {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+#ableton_download {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+#flstudio_download {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+#reaper_download {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
 .bold_text {
     color: white;
     font-family: "Helvetica";
     font-style: bold;
-    font-size: 300%;
+    font-size: 325%;
     text-align: left;
     letter-spacing: 10px;
     text-shadow: 3px 2px black;
@@ -40,6 +60,25 @@ body {
     font-size: 150%;
     text-align: left;
     letter-spacing: 1px;
+}
+
+.nav_text {
+    color: white;
+    display: inline-block;
+    font-family: "Helvetica";
+    font-style: italic;
+    font-size: 150%;
+    margin-right: 5%;
+    text-align: left;
+    letter-spacing: 1px;
+}
+
+.body_text {
+    color: black;
+    font-family: "Helvetica";
+    font-size: 125%;
+    text-align: left;
+    letter-spacing: 0px;
 }
 
 .preset-extras{
@@ -284,6 +323,14 @@ z-index: 10;
 
 }
 
+.setup_img {
+  margin-top: 15px;
+  margin-bottom: 15px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .step.quarter{
   background-color:rgba(230, 204, 255, 0.4);
 
@@ -448,6 +495,8 @@ z-index: 10;
     position: relative;
     max-height: 100%;
     overflow: auto;
+    display: flex;
+    flex-direction: column-reverse;
 }
 
 .buttonbar{
@@ -573,4 +622,22 @@ ul.tabs li.selected{
 
 .step.grabbing{
   cursor: -webkit-grabbing;
+
+.daws {
+  width: 100%;
+}
+
+.daw {
+  float:left;
+  width: 33%;
+  height: 50%;
+  text-align: center;
+}
+
+.intro_text {
+  color: white;
+  font-family: "Helvetica";
+  font-size: 250%;
+  text-align: center;
+  letter-spacing: 0px;
 }

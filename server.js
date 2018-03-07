@@ -24,19 +24,27 @@ var userThatClicked = [];
 
 app.use(express.static('public'));
 
-// dynamic url for rooms
+// homepage
 app.get('/', function(req, res){
-  res.sendFile(__dirname + '/public/index.html')
+  res.sendFile(__dirname + '/public/index.html');
 });
+
+// setup page
+app.get('/setup', function(req, res){
+  res.sendFile(__dirname + '/public/setup.html');
+});
+
+// dynamic url for rooms
 app.get('/:dynamicroute', function(req,res) {
   res.sendFile(__dirname + '/public/app.html')
 });
 
-// check each hour for cleaning up rooms older than 1 day, update db logs
+// check every five minutes for cleaning up old rooms, update db logs
 setInterval(function() {
   console.log("Checking for timed-out sessions at current time ", new Date())
+  createLog("", new Date(), "checked session ages");
   checkSessionAge();
-}, 3600000);
+}, 300000);
 
 io.on('connection', function(socket){
   // on connection
@@ -74,25 +82,69 @@ io.on('connection', function(socket){
 
     // instantiate new session or return existing session
     roomIndex = rooms.indexOf(roomID);
+    if (roomID.includes("ableton-") || roomID.includes("flstudio-") || roomID.includes("reaper-")) {
+      var daw = true;
+    }
+    // retrieve existing session
     if (roomIndex > -1) {
         sessions[roomIndex].onConnection(socket);
         console.log('We found ',roomID);
         createLog(roomID, new Date(), "room accessed");
+    // start new session
     } else {
       rooms.push(roomID);
       console.log('Creating ', roomID);
 
-      roomIndex = sessions.push(new session(roomID,socket));
-      roomIndex -= 1;
-      sessions[roomIndex].instruments.push( new TBDinstrument('TBD',60,32,{
-      	midiNotes: [],
-      	scale: [0,1,2,3,4,5,6,7,8,9,10,11],
-      	labels: [],
-      	rows: 0,
-      	melodic: 1
-      },60));
-      sessions[roomIndex].onConnection(socket);
+      // start regular session
+      if (!daw) {
+        roomIndex = sessions.push(new session(roomID,socket));
+        roomIndex -= 1;
+        sessions[roomIndex].instruments.push( new TBDinstrument('TBD',60,32,{
+        	midiNotes: [],
+        	scale: [0,1,2,3,4,5,6,7,8,9,10,11],
+        	labels: [],
+        	rows: 0,
+        	melodic: 1
+        },60));
+        sessions[roomIndex].onConnection(socket);
+      // start DAW session
+      } else {
+        roomIndex = sessions.push(new session(roomID,socket));
+        roomIndex -= 1;
+        // drums
+        sessions[roomIndex].instruments.push(new TBDinstrument('drums',12,32,{
+          midiNotes: [36,38,40,39,42,44,46,47,45,49,51,56],
+          labels:['kick','snare','snare2','clap','closed hat','pedal hat','open hat','mid tom','low tom','crash','ride','bell'],
+          rows: 12,
+          melodic: 0
+        },60));
+        // bass
+        sessions[roomIndex].instruments.push(new TBDinstrument('bass',12,32,{
+          midiNotes: [],
+        	scale: [0,1,2,3,4,5,6,7,8,9,10,11],
+        	labels: [],
+        	rows: 0,
+        	melodic: 1
+        },60));
+        // arp
+        sessions[roomIndex].instruments.push(new TBDinstrument('arp',12,32,{
+          midiNotes: [],
+        	scale: [0,1,2,3,4,5,6,7,8,9,10,11],
+        	labels: [],
+        	rows: 0,
+        	melodic: 1
+        },60));
+        // pad
+        sessions[roomIndex].instruments.push(new TBDinstrument('pad',12,32,{
+          midiNotes: [],
+        	scale: [0,1,2,3,4,5,6,7,8,9,10,11],
+        	labels: [],
+        	rows: 0,
+        	melodic: 1
+        },60));
 
+        sessions[roomIndex].onConnection(socket);
+      }
       // get created time
       sessions[getIx(roomID)].created = new Date();
       console.log("New room created at ", new Date(sessions[getIx(roomID)].created));
@@ -207,10 +259,9 @@ io.on('connection', function(socket){
         }
       }
       sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].push(new TBDnote(start[offix],data.column,data));
-      // console.log(sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid]);
+
       // log event
-      // console.log("step logged");
-      createLog(data.roomID, new Date(), "step change", data.user, Math.abs(start[offix] - data.column)+1);
+      createLog(data.roomID, new Date(), "step change", data.user, Math.abs(start[offix] - data.column)+1, data.inst);
 
       // clean up
       userThatClicked.splice(offix,1);
@@ -274,12 +325,12 @@ io.on('connection', function(socket){
 
         }
       }
-      createLog(data.roomID, new Date(), data.user, "step chord");
+      createLog(data.roomID, new Date(), "step chord", data.user);
     } else if (data.mousemode === 1) {
       data.state = '';
       sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = data.state;
       io.to(data.roomID).emit('stepreturn', data);
-      createLog(data.roomID, new Date(), data.user, "step erased");
+      createLog(data.roomID, new Date(), "step erased", data.user);
     } else {
       if(data.shifted){
         data.state = 'onoff';
@@ -433,10 +484,10 @@ function TBDinstrument(name, rows, cols, type, root){
   }
   this.grid = [];
   // TODO: delete when we're done fixing up on/off grids
-for(i=0;i<4;i++){
-  this.grid.push(createGrid(this.rows,cols));
-}
-this.clear = function(ix){
+  for(i=0;i<4;i++){
+    this.grid.push(createGrid(this.rows,cols));
+  }
+  this.clear = function(ix){
     this.grid[ix] = createGrid(this.rows,cols);
   }
 
@@ -454,7 +505,6 @@ this.clear = function(ix){
   this.reversey = function(ix){
     this.grid[ix].reverse();
   }
-	// Create the polarity grid for click/unclick
 
 }
 
@@ -516,12 +566,13 @@ function session(roomID, socket){
 }
 
 // activity log object
-function log(roomID, timestamp, activity, user, step_size, _id) {
+function log(roomID, timestamp, activity, user, step_size, instrument, _id) {
   this.roomID = roomID;
   this.timestamp = timestamp;
   this.activity = activity;
   this.user = user;
   this.step_size = step_size;
+  this.instrument = instrument;
   this._id = _id;
 }
 
@@ -536,15 +587,16 @@ function checkSessionAge() {
       console.log(sessions.length + " sessions remain.")
     }
   }
+  console.log("All sessions checked. " + sessions.length + " sessions remain.")
 }
 
-function createLog(roomID, timestamp, activity, user, step_size) {
+function createLog(roomID, timestamp, activity, user, step_size, instrument) {
   var _id = new Date();
   _id = user + roomID + _id.getTime();
   _id = Math.abs(_id.hashCode());
 
   // create json formatted log
-  var newLog = new log(roomID, timestamp, activity, user, step_size, _id)
+  var newLog = new log(roomID, timestamp, activity, user, step_size, instrument, _id)
 
   // connect to db server
   MongoClient.connect(uri, function(err, client) {

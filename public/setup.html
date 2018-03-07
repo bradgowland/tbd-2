@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8"/>
+		<!-- <meta name="viewport" content="width=device-width"> -->
+		<title>tbd 2 - setup</title>
+		<script src="/socket.io/socket.io.js"></script>
+		<link rel="stylesheet" type="text/css" href="style.css" />
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+	</head>
+	<body>
+		<div id="abletonRoom" class="modal fade" role="dialog" data-backdrop="static" data-keyboard="false">
+		  <div class="modal-dialog">
+		    <!-- Modal content-->
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <h4 class="modal-title">tbd 2</h4>
+		      </div>
+		      <div class="modal-body">
+		        <div id="greeting">Your Ableton Live starter session is downloading!<br><br>Choose a name for your tbd room.</div>
+		        <div><input id="abletonRoomName" type="text" placeholder="enter a session name"></input></div>
+		      </div>
+		      <div class="modal-footer">
+		        <button id="abletonRoomButton" type="submit" class="btn btn-default" data-dismiss="modal">Go!</button>
+		      </div>
+		    </div>
+		  </div>
+		</div>
+		<div id="flstudioRoom" class="modal fade" role="dialog" data-backdrop="static" data-keyboard="false">
+			<div class="modal-dialog">
+				<!-- Modal content-->
+				<div class="modal-content">
+					<div class="modal-header">
+						<h4 class="modal-title">tbd 2</h4>
+					</div>
+					<div class="modal-body">
+						<div id="greeting">Your FL Studio starter project is downloading!<br><br>Choose a name for your tbd room.</div>
+						<div><input id="flRoomName" type="text" placeholder="enter a session name"></input></div>
+					</div>
+					<div class="modal-footer">
+						<button id="flRoomButton" type="submit" class="btn btn-default" data-dismiss="modal">Go!</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="reaperRoom" class="modal fade" role="dialog" data-backdrop="static" data-keyboard="false">
+		  <div class="modal-dialog">
+		    <!-- Modal content-->
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <h4 class="modal-title">tbd 2</h4>
+		      </div>
+		      <div class="modal-body">
+		        <div id="greeting">Your Reaper starter project is downloading!<br><br>Choose a name for your tbd room.</div>
+		        <div><input id="reaperRoomName" type="text" placeholder="enter a session name"></input></div>
+		      </div>
+		      <div class="modal-footer">
+		        <button id="reaperRoomButton" type="submit" class="btn btn-default" data-dismiss="modal">Go!</button>
+		      </div>
+		    </div>
+		  </div>
+		</div>
+
+		<div class="container">
+			<div class="bold_text">tbd 2: setup</div>
+			<a href="#connect"><div class="nav_text">Connecting to your DAW</div></a>
+			<a href="#ableton"><div class="nav_text">Ableton</div></a>
+			<a href="#flstudio"><div class="nav_text">FL Studio</div></a>
+			<a href="#reaper"><div class="nav_text">Reaper</div></a>
+			<svg height="10" width=100% style="margin-top: 20px; margin-bottom: 20px">
+				<line x1=0% y1=0%   x2=1% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=1% y1=100% x2=2% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=2% y1=0%   x2=3% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=3% y1=100% x2=4% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=4% y1=0%   x2=5% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=5% y1=100% x2=6% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=6% y1=0%   x2=7% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=7% y1=100% x2=8% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=8% y1=0%   x2=9% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=9% y1=100% x2=10% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=10% y1=0%   x2=11% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=11% y1=100% x2=12% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=12% y1=0%   x2=13% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=13% y1=100% x2=14% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=14% y1=0%   x2=15% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=15% y1=100% x2=16% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=16% y1=0%   x2=17% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=17% y1=100% x2=18% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=18% y1=0%   x2=19% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=19% y1=100% x2=20% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=20% y1=0%   x2=21% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=21% y1=100% x2=22% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=22% y1=0%   x2=23% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=23% y1=100% x2=24% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=24% y1=0%   x2=25% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=25% y1=100% x2=26% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=26% y1=0%   x2=27% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=27% y1=100% x2=28% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=28% y1=0%   x2=29% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=29% y1=100% x2=30% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=30% y1=0%   x2=31% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=31% y1=100% x2=32% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=32% y1=0%   x2=33% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=33% y1=100% x2=34% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=34% y1=0%   x2=35% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=35% y1=100% x2=36% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=36% y1=0%   x2=37% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=37% y1=100% x2=38% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=38% y1=0%   x2=39% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=39% y1=100% x2=40% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=40% y1=0%   x2=41% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=41% y1=100% x2=42% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=42% y1=0%   x2=43% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=43% y1=100% x2=44% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=44% y1=0%   x2=45% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=45% y1=100% x2=46% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=46% y1=0%   x2=47% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=47% y1=100% x2=48% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=48% y1=0%   x2=49% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=49% y1=100% x2=50% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=50% y1=0%   x2=51% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=51% y1=100% x2=52% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=52% y1=0%   x2=53% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=53% y1=100% x2=54% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=54% y1=0%   x2=55% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=55% y1=100% x2=56% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=56% y1=0%   x2=57% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=57% y1=100% x2=58% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=58% y1=0%   x2=59% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=59% y1=100% x2=60% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=60% y1=0%   x2=61% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=61% y1=100% x2=62% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=62% y1=0%   x2=63% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=63% y1=100% x2=64% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=64% y1=0%   x2=65% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=65% y1=100% x2=66% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=66% y1=0%   x2=67% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=67% y1=100% x2=68% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=68% y1=0%   x2=69% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=69% y1=100% x2=70% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=70% y1=0%   x2=71% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=71% y1=100% x2=72% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=72% y1=0%   x2=73% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=73% y1=100% x2=74% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=74% y1=0%   x2=75% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=75% y1=100% x2=76% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=76% y1=0%   x2=77% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=77% y1=100% x2=78% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=78% y1=0%   x2=79% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=79% y1=100% x2=80% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=80% y1=0%   x2=81% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=81% y1=100% x2=82% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=82% y1=0%   x2=83% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=83% y1=100% x2=84% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=84% y1=0%   x2=85% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=85% y1=100% x2=86% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=86% y1=0%   x2=87% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=87% y1=100% x2=88% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=88% y1=0%   x2=89% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=89% y1=100% x2=90% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=90% y1=0%   x2=91% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=91% y1=100% x2=92% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=92% y1=0%   x2=93% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=93% y1=100% x2=94% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=94% y1=0%   x2=95% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=95% y1=100% x2=96% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=96% y1=0%   x2=97% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=97% y1=100% x2=98% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=98% y1=0%   x2=99% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=99% y1=100% x2=100% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+			</svg>
+			<a name="connect"><div class="ital_text">Connecting to your DAW</div></a>
+				<div class="body_text">To connect tbd 2 to your DAW on a Mac, open Audio MIDI Setup.
+					You can do this by hitting command + space and typing Audio MIDI Setup. Open the MIDI Studio
+					from the Window dropdown or by hitting command + 2, then click on the red IAC Driver icon.</div>
+				<img class= "setup_img" src="iac_driver.png">
+				<div class="body_text">In the MIDI Studio, check the name of your IAC driver and
+					click the "Device is online" box, then hit Apply.</div>
+				<img class= "setup_img" src="midi_studio.png">
+				<div class="body_text">Now, just choose the IAC driver from the MIDI studio from the dropdown in your session!</div>
+			<svg height="10" width=100% style="margin-top: 20px; margin-bottom: 20px">
+				<line x1=0% y1=0%   x2=1% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=1% y1=100% x2=2% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=2% y1=0%   x2=3% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=3% y1=100% x2=4% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=4% y1=0%   x2=5% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=5% y1=100% x2=6% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=6% y1=0%   x2=7% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=7% y1=100% x2=8% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=8% y1=0%   x2=9% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=9% y1=100% x2=10% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=10% y1=0%   x2=11% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=11% y1=100% x2=12% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=12% y1=0%   x2=13% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=13% y1=100% x2=14% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=14% y1=0%   x2=15% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=15% y1=100% x2=16% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=16% y1=0%   x2=17% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=17% y1=100% x2=18% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=18% y1=0%   x2=19% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=19% y1=100% x2=20% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=20% y1=0%   x2=21% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=21% y1=100% x2=22% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=22% y1=0%   x2=23% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=23% y1=100% x2=24% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=24% y1=0%   x2=25% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=25% y1=100% x2=26% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=26% y1=0%   x2=27% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=27% y1=100% x2=28% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=28% y1=0%   x2=29% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=29% y1=100% x2=30% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=30% y1=0%   x2=31% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=31% y1=100% x2=32% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=32% y1=0%   x2=33% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=33% y1=100% x2=34% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=34% y1=0%   x2=35% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=35% y1=100% x2=36% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=36% y1=0%   x2=37% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=37% y1=100% x2=38% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=38% y1=0%   x2=39% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=39% y1=100% x2=40% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=40% y1=0%   x2=41% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=41% y1=100% x2=42% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=42% y1=0%   x2=43% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=43% y1=100% x2=44% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=44% y1=0%   x2=45% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=45% y1=100% x2=46% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=46% y1=0%   x2=47% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=47% y1=100% x2=48% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=48% y1=0%   x2=49% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=49% y1=100% x2=50% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=50% y1=0%   x2=51% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=51% y1=100% x2=52% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=52% y1=0%   x2=53% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=53% y1=100% x2=54% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=54% y1=0%   x2=55% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=55% y1=100% x2=56% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=56% y1=0%   x2=57% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=57% y1=100% x2=58% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=58% y1=0%   x2=59% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=59% y1=100% x2=60% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=60% y1=0%   x2=61% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=61% y1=100% x2=62% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=62% y1=0%   x2=63% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=63% y1=100% x2=64% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=64% y1=0%   x2=65% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=65% y1=100% x2=66% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=66% y1=0%   x2=67% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=67% y1=100% x2=68% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=68% y1=0%   x2=69% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=69% y1=100% x2=70% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=70% y1=0%   x2=71% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=71% y1=100% x2=72% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=72% y1=0%   x2=73% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=73% y1=100% x2=74% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=74% y1=0%   x2=75% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=75% y1=100% x2=76% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=76% y1=0%   x2=77% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=77% y1=100% x2=78% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=78% y1=0%   x2=79% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=79% y1=100% x2=80% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=80% y1=0%   x2=81% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=81% y1=100% x2=82% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=82% y1=0%   x2=83% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=83% y1=100% x2=84% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=84% y1=0%   x2=85% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=85% y1=100% x2=86% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=86% y1=0%   x2=87% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=87% y1=100% x2=88% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=88% y1=0%   x2=89% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=89% y1=100% x2=90% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=90% y1=0%   x2=91% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=91% y1=100% x2=92% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=92% y1=0%   x2=93% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=93% y1=100% x2=94% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=94% y1=0%   x2=95% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=95% y1=100% x2=96% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=96% y1=0%   x2=97% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=97% y1=100% x2=98% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=98% y1=0%   x2=99% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=99% y1=100% x2=100% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+			</svg>
+			<a name="ableton"><div class="ital_text">Ableton Live</div></a>
+				<button id="ableton_download" type="button" class="btn btn-default">
+					<a href="tbd_ableton.zip" download>Start Ableton Session</a>
+				</button>
+				<div class="body_text">To get set up with Ableton Live, use the MIDI From dropdown on each MIDI track
+					to select the IAC Bus your TBD session is sending to. Then, select the channel that each TBD Instrument is
+					sending to on the matching track. Make sure each track is record enabled by clicking the red button.To
+					record enable multiple tracks, hold command while you click the record button on other tracks.</div>
+				<img class= "setup_img" src="ableton_setup.png">
+			<svg height="10" width=100% style="margin-top: 20px; margin-bottom: 20px">
+				<line x1=0% y1=0%   x2=1% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=1% y1=100% x2=2% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=2% y1=0%   x2=3% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=3% y1=100% x2=4% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=4% y1=0%   x2=5% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=5% y1=100% x2=6% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=6% y1=0%   x2=7% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=7% y1=100% x2=8% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=8% y1=0%   x2=9% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=9% y1=100% x2=10% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=10% y1=0%   x2=11% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=11% y1=100% x2=12% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=12% y1=0%   x2=13% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=13% y1=100% x2=14% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=14% y1=0%   x2=15% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=15% y1=100% x2=16% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=16% y1=0%   x2=17% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=17% y1=100% x2=18% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=18% y1=0%   x2=19% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=19% y1=100% x2=20% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=20% y1=0%   x2=21% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=21% y1=100% x2=22% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=22% y1=0%   x2=23% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=23% y1=100% x2=24% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=24% y1=0%   x2=25% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=25% y1=100% x2=26% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=26% y1=0%   x2=27% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=27% y1=100% x2=28% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=28% y1=0%   x2=29% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=29% y1=100% x2=30% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=30% y1=0%   x2=31% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=31% y1=100% x2=32% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=32% y1=0%   x2=33% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=33% y1=100% x2=34% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=34% y1=0%   x2=35% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=35% y1=100% x2=36% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=36% y1=0%   x2=37% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=37% y1=100% x2=38% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=38% y1=0%   x2=39% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=39% y1=100% x2=40% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=40% y1=0%   x2=41% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=41% y1=100% x2=42% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=42% y1=0%   x2=43% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=43% y1=100% x2=44% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=44% y1=0%   x2=45% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=45% y1=100% x2=46% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=46% y1=0%   x2=47% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=47% y1=100% x2=48% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=48% y1=0%   x2=49% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=49% y1=100% x2=50% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=50% y1=0%   x2=51% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=51% y1=100% x2=52% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=52% y1=0%   x2=53% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=53% y1=100% x2=54% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=54% y1=0%   x2=55% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=55% y1=100% x2=56% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=56% y1=0%   x2=57% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=57% y1=100% x2=58% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=58% y1=0%   x2=59% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=59% y1=100% x2=60% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=60% y1=0%   x2=61% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=61% y1=100% x2=62% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=62% y1=0%   x2=63% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=63% y1=100% x2=64% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=64% y1=0%   x2=65% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=65% y1=100% x2=66% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=66% y1=0%   x2=67% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=67% y1=100% x2=68% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=68% y1=0%   x2=69% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=69% y1=100% x2=70% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=70% y1=0%   x2=71% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=71% y1=100% x2=72% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=72% y1=0%   x2=73% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=73% y1=100% x2=74% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=74% y1=0%   x2=75% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=75% y1=100% x2=76% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=76% y1=0%   x2=77% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=77% y1=100% x2=78% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=78% y1=0%   x2=79% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=79% y1=100% x2=80% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=80% y1=0%   x2=81% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=81% y1=100% x2=82% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=82% y1=0%   x2=83% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=83% y1=100% x2=84% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=84% y1=0%   x2=85% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=85% y1=100% x2=86% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=86% y1=0%   x2=87% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=87% y1=100% x2=88% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=88% y1=0%   x2=89% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=89% y1=100% x2=90% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=90% y1=0%   x2=91% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=91% y1=100% x2=92% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=92% y1=0%   x2=93% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=93% y1=100% x2=94% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=94% y1=0%   x2=95% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=95% y1=100% x2=96% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=96% y1=0%   x2=97% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=97% y1=100% x2=98% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=98% y1=0%   x2=99% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				<line x1=99% y1=100% x2=100% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+			</svg>
+				<a name="flstudio"><div class="ital_text">FL Studio</div></a>
+					<button id="flstudio_download" type="button" class="btn btn-default">
+						<a href="tbd_flstudio.zip" download>Start FL Studio Session</a>
+					</button>
+					<div class="body_text">To get set up with FL Studio, open Options > MIDI Settings. Choose your IAC driver and
+						make sure you click the Enabled button.</div>
+					<img class= "setup_img" src="fl_setup_1.png">
+					<div class="body_text">Managing your MIDI channels in FL Studio can be a little finicky! All tracks receiving MIDI
+						must be selected. A green recangle indicates that the track is selected, and holding shift allows selecting multiple
+						tracks. The MIDI channel that the track receives from is determined by the order of the tracks. In the snippet below,
+						the drums track receives from MIDI Channel 1, the bass track receives from MIDI Channel 2, and so on. Keep your tracks
+						in order, or your routing will change!</div>
+					<img class= "setup_img" src="fl_setup_2.png">
+				<svg height="10" width=100% style="margin-top: 20px; margin-bottom: 20px">
+					<line x1=0% y1=0%   x2=1% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=1% y1=100% x2=2% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=2% y1=0%   x2=3% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=3% y1=100% x2=4% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=4% y1=0%   x2=5% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=5% y1=100% x2=6% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=6% y1=0%   x2=7% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=7% y1=100% x2=8% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=8% y1=0%   x2=9% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=9% y1=100% x2=10% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=10% y1=0%   x2=11% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=11% y1=100% x2=12% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=12% y1=0%   x2=13% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=13% y1=100% x2=14% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=14% y1=0%   x2=15% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=15% y1=100% x2=16% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=16% y1=0%   x2=17% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=17% y1=100% x2=18% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=18% y1=0%   x2=19% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=19% y1=100% x2=20% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=20% y1=0%   x2=21% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=21% y1=100% x2=22% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=22% y1=0%   x2=23% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=23% y1=100% x2=24% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=24% y1=0%   x2=25% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=25% y1=100% x2=26% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=26% y1=0%   x2=27% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=27% y1=100% x2=28% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=28% y1=0%   x2=29% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=29% y1=100% x2=30% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=30% y1=0%   x2=31% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=31% y1=100% x2=32% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=32% y1=0%   x2=33% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=33% y1=100% x2=34% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=34% y1=0%   x2=35% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=35% y1=100% x2=36% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=36% y1=0%   x2=37% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=37% y1=100% x2=38% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=38% y1=0%   x2=39% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=39% y1=100% x2=40% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=40% y1=0%   x2=41% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=41% y1=100% x2=42% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=42% y1=0%   x2=43% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=43% y1=100% x2=44% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=44% y1=0%   x2=45% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=45% y1=100% x2=46% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=46% y1=0%   x2=47% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=47% y1=100% x2=48% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=48% y1=0%   x2=49% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=49% y1=100% x2=50% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=50% y1=0%   x2=51% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=51% y1=100% x2=52% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=52% y1=0%   x2=53% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=53% y1=100% x2=54% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=54% y1=0%   x2=55% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=55% y1=100% x2=56% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=56% y1=0%   x2=57% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=57% y1=100% x2=58% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=58% y1=0%   x2=59% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=59% y1=100% x2=60% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=60% y1=0%   x2=61% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=61% y1=100% x2=62% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=62% y1=0%   x2=63% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=63% y1=100% x2=64% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=64% y1=0%   x2=65% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=65% y1=100% x2=66% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=66% y1=0%   x2=67% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=67% y1=100% x2=68% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=68% y1=0%   x2=69% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=69% y1=100% x2=70% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=70% y1=0%   x2=71% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=71% y1=100% x2=72% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=72% y1=0%   x2=73% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=73% y1=100% x2=74% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=74% y1=0%   x2=75% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=75% y1=100% x2=76% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=76% y1=0%   x2=77% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=77% y1=100% x2=78% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=78% y1=0%   x2=79% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=79% y1=100% x2=80% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=80% y1=0%   x2=81% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=81% y1=100% x2=82% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=82% y1=0%   x2=83% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=83% y1=100% x2=84% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=84% y1=0%   x2=85% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=85% y1=100% x2=86% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=86% y1=0%   x2=87% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=87% y1=100% x2=88% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=88% y1=0%   x2=89% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=89% y1=100% x2=90% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=90% y1=0%   x2=91% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=91% y1=100% x2=92% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=92% y1=0%   x2=93% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=93% y1=100% x2=94% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=94% y1=0%   x2=95% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=95% y1=100% x2=96% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=96% y1=0%   x2=97% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=97% y1=100% x2=98% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=98% y1=0%   x2=99% y2=100% style="stroke:rgb(255,255,255);stroke-width:2"/>
+					<line x1=99% y1=100% x2=100% y2=0% style="stroke:rgb(255,255,255);stroke-width:2"/>
+				</svg>
+				<a name="reaper"><div class="ital_text">Reaper</div></a>
+					<button id="reaper_download" type="button" class="btn btn-default">
+						<a href="tbd_reaper.zip" download>Start Reaper Session</a>
+					</button>
+					<div class="body_text">To get set up with Reaper, click the Input dropdown on each track, then select Input: MIDI >
+						Your IAC Driver > MIDI Channel. Choose the appropriate MIDI channel for each track. Make sure all tracks are record
+						enabled by clicking the red record button on each track you want to receive MIDI. Unfortunately our Reaper template
+						isn't totally plug-and-play because Reaper doesn't come preloaded with instruments, but you can just add your
+						favorite synths and drums to each track to get groovin'!</div>
+					<img class= "setup_img" src="reaper_setup.png">
+		</div>
+		<script src="setup.js"></script>
+	</body>
+</html>
