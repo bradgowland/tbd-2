@@ -117,7 +117,7 @@ io.on('connection', function(socket){
           labels:['kick','snare','snare2','clap','closed hat','pedal hat','open hat','mid tom','low tom','crash','ride','bell'],
           rows: 12,
           melodic: 0
-        },60));
+        },60,1));
         // bass
         sessions[roomIndex].instruments.push(new TBDinstrument('bass',12,32,{
           midiNotes: [],
@@ -125,7 +125,7 @@ io.on('connection', function(socket){
         	labels: [],
         	rows: 0,
         	melodic: 1
-        },60));
+        },60,2));
         // arp
         sessions[roomIndex].instruments.push(new TBDinstrument('arp',12,32,{
           midiNotes: [],
@@ -133,7 +133,7 @@ io.on('connection', function(socket){
         	labels: [],
         	rows: 0,
         	melodic: 1
-        },60));
+        },60,3));
         // pad
         sessions[roomIndex].instruments.push(new TBDinstrument('pad',12,32,{
           midiNotes: [],
@@ -141,7 +141,7 @@ io.on('connection', function(socket){
         	labels: [],
         	rows: 0,
         	melodic: 1
-        },60));
+        },60, 4));
 
         sessions[roomIndex].onConnection(socket);
       }
@@ -471,13 +471,13 @@ function createGrid(rows,columns){
 }
 
 // instrument object
-function TBDinstrument(name, rows, cols, type, root){
+function TBDinstrument(name, rows, cols, type, root, out){
 	this.rows = rows;
 	this.cols = cols;
 	this.name = name;
   this.type = type;
   this.root = root;
-  this.out;
+  this.out = out;
   this.steps = [[],[],[],[]];
   if(type.rows){
     this.rows = type.rows;

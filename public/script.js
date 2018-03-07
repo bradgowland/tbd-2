@@ -47,11 +47,21 @@ WebMidi.enable(function(err){
 	if(err){
 		alert("Uh oh! Looks like WebMidi failed. Some browsers don't support WebMIDI, try Firefox or Chrome!!");
 	}
+	var iacIndex = -1;
+	var iac = 'IAC Driver Bus 1';
 	// List the outputs
 	for(var i = 0; i < WebMidi.outputs.length;i++){
 		$('#midi').append("<option>"+WebMidi.outputs[i].name+"</option>")
+		if(WebMidi.outputs[i].name.includes(iac)){
+			iacIndex = i;
+		}
+	}
+	if(iacIndex > -1){
+		midiOut = WebMidi.outputs[iacIndex];
+		$('#midi').val(WebMidi.outputs[iacIndex].name);
 	}
 
+	$('#midi').val(WebMidi.outputs[iacIndex].name);
 	// Sets instrument MIDI outs
 	$('#midi').change(function(){
 		selectedOutput = $('option:selected', this).index()-1;
@@ -117,7 +127,7 @@ $(document).ready(function(){
 		if(data.instruments){
 			for (var h = 0; h < data.instruments.length;h++){
 				currInst = data.instruments[h];
-				instruments.push(new TBDgrid(currInst.name,currInst.rows,currInst.cols,currInst.type,currInst.root));
+				instruments.push(new TBDgrid(currInst.name,currInst.rows,currInst.cols,currInst.type,currInst.root,currInst.out));
 				for(i = 0; i < 4;i++){
 				if(currInst.steps[i].length){
 					for(j=0;j<currInst.steps[i].length;j++){
@@ -128,6 +138,7 @@ $(document).ready(function(){
 						}
 					}
 				}
+
 		}
 				// objGrid = currInst.steps;
 				// instruments[h].connection(currInst.grid,h);
@@ -137,11 +148,16 @@ $(document).ready(function(){
 
 		// get current list of Users
 		users = data.users;
-    
+
 		// show session
 		showTab(instruments.length);
 		currentGridIndex = instruments.length-1;
 		lastIx = currentGridIndex;
+		if(instruments[currentGridIndex] && currentGridIndex>-1){
+			$('#output').val('Channel '+instruments[currentGridIndex].out);
+		}else{
+			$('#output').val('Pick yr MIDI out!');
+		}
 		$('.thumbs:eq('+currentGridIndex+')').addClass('selected');
 		$('.container').fadeIn(1000);
 		$('.gridContainer').scrollTop(400);
@@ -445,7 +461,7 @@ if(instruments[currentGridIndex].steps[currentThumb].length){
 	socket.on('newInstReturn',function(data){
 
 		// console.log(data);
-		instruments.push(new TBDgrid(data.name,data.rows,columns,data.type,data.root));
+		instruments.push(new TBDgrid(data.name,data.rows,columns,data.type,data.root,data.out));
 		if(userThatClicked){
 			currentGridIndex = instruments.length-1;
 			$('ul.tabs li a').removeClass('selected');
@@ -997,7 +1013,6 @@ function getLastStep(data){
 	var thisStep = instruments[data.inst].steps[data.grid][noteIx];
 	return thisStep
 }
-
 
 
 

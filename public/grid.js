@@ -5,7 +5,7 @@ var noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 
 
 
-function TBDgrid(name, rows, cols,type, root){
+function TBDgrid(name, rows, cols,type, root, outChan){
 	this.rows = rows;
 	this.cols = cols;
 	this.thumb = 0;
@@ -31,7 +31,7 @@ function TBDgrid(name, rows, cols,type, root){
 			}
 	}
 
-	this.out=0;
+	this.out=outChan;
 	this.type = type;
 	if(type.rows){
 		this.rows = type.rows;
