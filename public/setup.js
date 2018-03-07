@@ -12,7 +12,7 @@ $(document).ready(function(){
 
 	// snag the room name, append daw for special session init, redirect
 	$('#abletonRoomButton').click(function() {
-			roomID = "ableton-" + $("#roomName").val();
+			roomID = "ableton-" + $("#abletonRoomName").val();
 			// clean up url
 			var url = window.location.href;
 			url = url.replace("setup","");
@@ -23,7 +23,7 @@ $(document).ready(function(){
 			window.location.href = url + roomID;
 	});
 	$('#flRoomButton').click(function() {
-			roomID = "flstudio-" + $("#roomName").val();
+			roomID = "flstudio-" + $("#flRoomName").val();
 			// clean up url
 			var url = window.location.href;
 			url = url.replace("setup","");
@@ -34,7 +34,7 @@ $(document).ready(function(){
 			window.location.href = url + roomID;
 	});
 	$('#reaperRoomButton').click(function() {
-			roomID = "reaper-" + $("#roomName").val();
+			roomID = "reaper-" + $("#reaperRoomName").val();
 			// clean up url
 			var url = window.location.href;
 			url = url.replace("setup","");
