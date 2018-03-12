@@ -428,6 +428,26 @@ if(instruments[currentGridIndex].steps[currentThumb].length){
 	// create new instance from user menu specs
 	$(".newInsButton").click(function(){
 		var instName = $("#insName").val();
+
+		var duplicates = true;
+		var numToAppend = 1;
+		var names = instruments.map(a => a.name);
+		while(duplicates){
+			var dupIx = names.indexOf(instName);
+			if(dupIx > -1){
+				if(numToAppend > 1){
+					instName = instName.substring(0,instName.length-1)
+				}
+				instName = instName + numToAppend;
+				numToAppend+=1;
+			}else{
+				duplicates = false;
+			}
+
+
+		}
+
+
 		var rowCount = $("#rowCount").val();
 		if(rowCount > 128){
 			rowCount = 128;
@@ -813,22 +833,23 @@ switch(data.state){
 		$stepthumb.addClass('clicked');
 		break;
 	case 'move':
-		if(data.grab){
-		noteIx = instruments[data.inst].steps[data.grid].findIndex(function(el){
-			return (el.row === data.row) && (el.on <= data.column) && (el.off >= data.column)
-		});
-		var currStep = instruments[data.inst].steps[data.grid][noteIx];
-		instruments[data.inst].removeNotes(currStep);
-		offset = data.column - instruments[data.inst].steps[data.grid][noteIx].on;
-		}
-			data.column -= offset;
+	console.log(data.noteIx);
+		// if(data.grab){
+		// noteIx = instruments[data.inst].steps[data.grid].findIndex(function(el){
+		// 	return (el.row === data.row) && (el.on <= data.column) && (el.off >= data.column)
+		// });
+		// var currStep = instruments[data.inst].steps[data.grid][data.noteIx];
+		// instruments[data.inst].removeNotes(currStep);
+		// offset = data.column - instruments[data.inst].steps[data.grid][data.noteIx].on;
+		// }
+			data.column -= data.offset;
 
-			instruments[data.inst].steps[data.grid][noteIx].move(data);
+			instruments[data.inst].steps[data.grid][data.noteIx].move(data);
 
 			instruments[data.inst].refreshSteps(data.grid);
 			if(data.release){
 				$('.step').removeClass('grabbing');
-				var setNote = instruments[data.inst].steps[data.grid][noteIx];
+				var setNote = instruments[data.inst].steps[data.grid][data.noteIx];
 				instruments[data.inst].getNotes(setNote);
 			}
 		break;
@@ -899,11 +920,16 @@ function TBDnote(startpos,endpos,data){
 			this.$elsthumb.removeClass('clicked');
 			this.row = data.row;
 			this.on = data.column;
+			if(this.on<0){
+				this.on = 0;
+			}
 			this.off = data.column + this.len;
-
-			this.$start = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+data.column+")");
-			this.$end = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+(data.column + this.len)+")");
-			this.$els = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step").slice(data.column,data.column+this.len+1);
+			if(this.off > 31){
+				this.off = 31;
+			}
+			this.$start = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+this.on+")");
+			this.$end = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+(this.off)+")");
+			this.$els = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step").slice(this.on,this.off+1);
 			this.$elsthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb").slice(this.on,this.off+1);
 			this.$els.addClass('clicked');
 			this.$start.addClass('left');

@@ -19,6 +19,7 @@ var roomID = "";
 var roomIndex = -1;
 var start = [];
 var selectedStep,clickOffset;
+var selectedSteps = [];
 
 var userThatClicked = [];
 
@@ -249,7 +250,7 @@ io.on('connection', function(socket){
         data.state = 'onoff';
       } else {
         data.flipped = data.column < start[offix] ? true : false;
-        console.log('Flipped?:  ', data.flipped);
+        // console.log('Flipped?:  ', data.flipped);
         if(data.flipped){
           sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][start[offix]].state = 'off';
         } else {
@@ -270,21 +271,39 @@ io.on('connection', function(socket){
 
     if(data.state === 'move'){
       if(data.grab){
-        selectedStep= sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].findIndex(function(el){
+        selectedStep = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].findIndex(function(el){
           return (el.row === data.row) && (el.on <= data.column) && (el.off >= data.column)
         });
+        if(selectedStep > -1){
         clickOffset = data.column - sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][selectedStep].on;
-
+      }else{
+        // console.log(data);
       }
-      data.offset = clickOffset;
+        selectedSteps.push({
+          user: data.user,
+          offset:clickOffset,
+          noteIx: selectedStep
+        });
+        // console.log('selectedSteps',selectedSteps);
+        data.offset = clickOffset;
+      }
 
 
-      if(selectedStep > -1){
+      var curr = selectedSteps.filter(a => a.user === data.user)[0];
 
-        sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][selectedStep].move(data);
+      // console.log(curr);
+      if(curr.noteIx > -1){
+        data.offset = curr.offset;
+        sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][curr.noteIx].move(data);
         // console.log(sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][selectedStep]);
+        data.noteIx = curr.noteIx;
+      }
+
+      if(data.release){
+        selectedSteps.splice(selectedSteps.findIndex(a =>a.user === data.user),1)
       }
     }
+
     if(data.mousemode === 2) {
       for(i=0;i<3;i++){
         if(data.row >= 0){
@@ -405,6 +424,7 @@ io.on('connection', function(socket){
   })
 
   socket.on('reversex',function(data){
+    // console.log(sessions[getIx(data.roomID)].instruments[data.inst].steps[0])
     sessions[getIx(data.roomID)].instruments[data.inst].reversex(data.gridix);
     // console.log(sessions[getIx(data.roomID)].instruments[data.inst].grid);
     io.to(data.roomID).emit('reversexreturn',
@@ -526,7 +546,13 @@ function TBDnote(startpos,endpos,data){
   this.move = function(data){
     this.row = data.row;
     this.on = data.column-data.offset;
+    if(this.on<0){
+      this.on = 0;
+    }
     this.off = this.on + this.len;
+    if(this.off > 31){
+      this.off = 31;
+    }
     this.data.row = data.row;
   }
 }
