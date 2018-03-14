@@ -202,43 +202,6 @@ io.on('connection', function(socket){
       start.push(data.column);
     }
 
-    if(data.state === ''){
-      //left of this cell.
-      if(data.column>0){
-      var left = sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state;
-        switch(left){
-          case 'sus':
-          sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state = 'off';
-          data.onleft = true;
-          break;
-          case 'on':
-          sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state = 'onoff';
-          data.onleft = true;
-          break;
-          default: data.onleft = false;
-        }
-      }
-
-      if(data.column < sessions[getIx(data.roomID)].instruments[data.inst].cols - 1){
-        var right = sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state;
-        switch(right){
-          case 'sus':
-            sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'on';
-            data.onright = true;
-          break;
-          case 'off':
-            sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'onoff';
-            data.onright = true;
-          break;
-          case 'onoff':
-            data.onright = true;
-            sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'onoff';
-          break;
-          default: data.onright = false;
-        }
-      }
-    }
-
     if (data.state === 'off') {
       offix = userThatClicked.indexOf(data.user);
       if (data.column === start[offix]) {
@@ -290,6 +253,17 @@ io.on('connection', function(socket){
 
       if(data.release){
         selectedSteps.splice(selectedSteps.findIndex(a =>a.user === data.user),1)
+
+        var setNote = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][data.noteIx];
+				var overlappers = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].filter(
+					a => a.row === data.row && a.inRange(setNote.on,setNote.off));
+
+					//remove reference to the note that we're checking against
+				overlappers.splice(overlappers.indexOf(setNote),1);
+        console.log('The overlappers:  ',overlappers,'  End');
+				 var overlapTypes = [];
+				overlappers.forEach(a => overlapTypes.push(overlapType(setNote,a)))
+				correctOverlaps(overlappers,overlapTypes, setNote,data);
       }
     }
 
@@ -382,11 +356,10 @@ io.on('connection', function(socket){
   // clear grid contents
   socket.on('clearcurrent', function(data){
     // clear current grid state
-    sessions[getIx(data.roomID)].instruments[data.inst].clear(data.gridix);
+    sessions[getIx(data.roomID)].instruments[data.inst].clear(data.grid);
     // send clear message to clients
-    io.emit('clearcurrentreturn',{
-      inst: data.inst,
-    });
+    io.emit('clearcurrentreturn',data);
+    console.log(data);
     createLog(data.roomID, new Date(), "grid cleared", data.user);
   });
 
@@ -421,6 +394,7 @@ io.on('connection', function(socket){
   });
 
   socket.on('reversey',function(data){
+    console.log(sessions[getIx(data.roomID)].instruments[data.inst].steps[0][0])
     sessions[getIx(data.roomID)].instruments[data.inst].reversey(data.gridix);
     console.log('Reversed the grid in '+data.roomID+'');
     io.to(data.roomID).emit('reverseyreturn',
@@ -431,8 +405,6 @@ io.on('connection', function(socket){
     });
     createLog(data.roomID, new Date(), "y axis reversed", data.user);
   });
-
-
 
   // msg to all users
   socket.on('chat to server', function(data){
@@ -489,7 +461,7 @@ function TBDinstrument(name, rows, cols, type, root, out){
     this.grid.push(createGrid(this.rows,cols));
   }
   this.clear = function(ix){
-    this.grid[ix] = createGrid(this.rows,cols);
+    this.steps[ix] = [];
   }
 
   this.reversex = function(ix){
@@ -534,6 +506,22 @@ function TBDnote(startpos,endpos,data){
       this.off = 31;
     }
     this.data.row = data.row;
+  }
+  this.trimRight = function(newOff){
+    this.off = newOff;
+    this.len = this.off-this.on;
+  }
+
+  this.trimLeft = function(newOn){
+    this.on = newOn;
+    this.len = this.off-newOn;
+  }
+
+  this.inRange = function(on,off){
+    var isOverlapping = between(on,off,this.on) || between(on,off,this.off);
+    var isWrapped = between(this.on,this.off,on) || between(this.on,this.off,off)
+    console.log(isOverlapping,' that there is an overlap');
+    return isOverlapping || isWrapped;
   }
 }
 
@@ -659,4 +647,50 @@ String.prototype.hashCode = function() {
         hash = hash & hash; // Convert to 32bit integer
     }
     return hash;
+}
+
+function between(lower,upper,check){
+	if(check >= lower && check <= upper){
+		return true;
+	}else{
+		return false;
+	}
+}
+
+function overlapType(moved, overlap){
+	if(between(moved.on,moved.off, overlap.off) && between(moved.on,moved.off, overlap.on)){
+		return 'covered'
+	}else if(!between(moved.on,moved.off, overlap.off) && !between(moved.on,moved.off, overlap.on)){
+		return 'wrapping'
+	}else if(between(moved.on,moved.off, overlap.off) && overlap.on < moved.on){
+		return 'onleft';
+	}else{
+		return 'onright';
+	}
+}
+
+function correctOverlaps(overlaps,overlapCase,moved,data){
+	for(i=0;i<overlaps.length;i++){
+		var currIx = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].indexOf(overlaps[i]);
+		console.log('currIx  ', currIx);
+		switch(overlapCase[i]){
+			case 'covered':
+				sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].splice(currIx,1);
+			break;
+
+			case 'wrapping':
+      sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].push(new TBDnote(moved.off+1,overlaps[i].off,data));
+      sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][currIx].trimRight(moved.on-1)
+
+			break;
+			case 'onleft':
+			sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][currIx].trimRight(moved.on-1)
+			break;
+			case 'onright':
+				sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][currIx].trimLeft(moved.off+1)
+			break;
+		}
+	}
+
+
 }

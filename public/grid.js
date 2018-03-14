@@ -132,10 +132,6 @@ this.gridReversed = function(grid,index,gridix){
 			}
 		}
 
-	this.connect = function(steps){
-
-
-	}
 
 	this.getNotes = function(thing){
 			var midiVal = this.type.midiNotes[this.rows - 1 - thing.row];
@@ -156,28 +152,16 @@ this.gridReversed = function(grid,index,gridix){
 	}
 
 	this.clear = function(ix){
-		this.notes.on = [];
-		this.notes.off = [];
-		for(var h = 0;h < 4; h++){
-			this.notes.on.push([]);
-			this.notes.off.push([]);
-			for(var i = 0; i<columns; i++){
-				this.notes.on[h].push([]);
-				this.notes.off[h].push([]);
+		this.notes.on[ix] = [];
+		this.notes.off[ix] = [];
+		for(var i = 0; i<columns; i++){
+				this.notes.on[ix].push([]);
+				this.notes.off[ix].push([]);
 		}
+		this.steps[ix].forEach(a => a.delete());
+		this.steps[ix] = [];
 	}
-		$(".gridContainer:eq("+ix+")").find(".clicked").removeClass("clicked left right");
-		$(".little.selected").find(".clicked").removeClass("clicked");
-	}
 
-
-
-
-	// initial values
-
-	// $('ul.tabs li a').removeClass('selected');
-	// $('.tab-content').removeClass('selected');
-		//Create Tab
 	//Creates the Instrument Tag Link
 	var newTab = '<li><a class="tab-link" data-tab="'+name+'">'+name+'  <input type="image" class="deletetab" src="littlex.png"></input></a></li>';
 	$('.tabs').append(newTab);
@@ -277,43 +261,10 @@ this.gridReversed = function(grid,index,gridix){
 
 }
 
-function createGrid(rows,columns){
-  var newGrid = [];
-  var newRow = []
-  for(var i = 0; i < rows; i++){
-    for(var k = 0; k < columns; k++){
-      newRow.push(-1);
-    }
-    newGrid.push(newRow);
-    newRow = [];
-
-  }
-  return newGrid;
-}
-
 function findNoteFromNumber(num){
 	var theNote = noteNames[num%12];
 	var octaveNum = Math.floor(num/12) - 1;
 	return theNote+octaveNum;
-}
-
-function isAnOnset(ix,row,col){
-	var $thisStep = $('.gridContainer:eq('+ix+') .row:eq('+row+') .step:eq('+col+')');
-	if($thisStep.hasClass('left')){
-		return true;
-	}else{
-		return false;
-	}
-
-}
-
-function isAnOffset(ix,row,col){
-	var $thisStep = $('.gridContainer:eq('+ix+') .row:eq('+row+') .step:eq('+col+')');
-	if($thisStep.hasClass('right')){
-		return true;
-	}else{
-		return false;
-	}
 }
 
 function remove(note, array){

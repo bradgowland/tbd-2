@@ -2,15 +2,6 @@ body {
     padding: 20px;
     margin: 10px;
     background: linear-gradient(90deg, aqua, hotpink);
-
-}
-
-.smile{
-  background-image: url(smile.png);
-  background: transparent;
-  height: 100%;
-  width:100%;
-
 }
 
 #midi{
@@ -18,10 +9,6 @@ body {
   height: 100%;
 }
 
-/*li {
-    padding: 5px 10px;
-    font: 20px Helvetica;
-}*/
 
 #homepage_button {
   margin-top: 5px;
@@ -482,7 +469,7 @@ input {
 }
 
 .buttonbar{
-  width: 23.5%;
+  width: 10.5%;
   height: inherit;
   border: none;
   font-size: 18px;
@@ -570,7 +557,7 @@ ul.tabs li.selected{
 
 .midbar{
   text-align: center;
-  height:80px;
+  height:40px;
   margin:10px;
 }
 
