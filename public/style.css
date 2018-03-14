@@ -5,23 +5,13 @@ body {
 
 }
 
-.smile{
-  background-image: url(smile.png);
-  background: transparent;
-  height: 100%;
-  width:100%;
 
-}
 
 #midi{
   float: right;
   height: 100%;
 }
 
-/*li {
-    padding: 5px 10px;
-    font: 20px Helvetica;
-}*/
 
 #homepage_button {
   margin-top: 5px;
@@ -441,6 +431,7 @@ z-index: 10;
 
 
 
+
 .step.current{
    /*border: solid hotpink 4px; */
    background-color: red;
@@ -508,7 +499,7 @@ z-index: 10;
 }
 
 .buttonbar{
-    width: 23.5%;
+    width: 10.5%;
     height: inherit;
     border: none;
     font-size: 18px;
@@ -603,7 +594,7 @@ ul.tabs li.selected{
 
 .midbar{
     text-align: center;
-    height:80px;
+    height:40px;
     margin:10px;
 }
 

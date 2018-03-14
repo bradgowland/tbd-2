@@ -501,7 +501,7 @@ if(instruments[currentGridIndex].steps[currentThumb].length){
 		socket.emit('clearcurrent',
 		{
 			inst: currentGridIndex,
-			gridix: currentThumb,
+			grid: currentThumb,
 			roomID: roomID,
 			user: user
 		});
@@ -517,7 +517,8 @@ if(instruments[currentGridIndex].steps[currentThumb].length){
 
 	// update grid on clear
 	socket.on('clearcurrentreturn', function(data){
-		instruments[data.inst].clear(data.inst);
+		console.log(data);
+		instruments[data.inst].clear(data.grid);
 	});
 
 	socket.on('clearallreturn', function(){
@@ -834,22 +835,24 @@ switch(data.state){
 		break;
 	case 'move':
 	console.log(data.noteIx);
-		// if(data.grab){
-		// noteIx = instruments[data.inst].steps[data.grid].findIndex(function(el){
-		// 	return (el.row === data.row) && (el.on <= data.column) && (el.off >= data.column)
-		// });
-		// var currStep = instruments[data.inst].steps[data.grid][data.noteIx];
-		// instruments[data.inst].removeNotes(currStep);
-		// offset = data.column - instruments[data.inst].steps[data.grid][data.noteIx].on;
-		// }
+
 			data.column -= data.offset;
-
 			instruments[data.inst].steps[data.grid][data.noteIx].move(data);
-
 			instruments[data.inst].refreshSteps(data.grid);
 			if(data.release){
 				$('.step').removeClass('grabbing');
 				var setNote = instruments[data.inst].steps[data.grid][data.noteIx];
+				var neighbors = instruments[data.inst].steps[data.grid].filter(
+					a => a.row === data.row);
+
+					//remove reference to the note that we're checking against
+				neighbors.splice(neighbors.indexOf(setNote),1);
+				var overlappers = neighbors.filter(a=>a.inRange(setNote.on,setNote.off));
+				var overlapTypes = [];
+				overlappers.forEach(a => overlapTypes.push(overlapType(setNote,a)))
+				console.log(overlapTypes);
+				correctOverlaps(overlappers,overlapTypes, setNote,data);
+				instruments[data.inst].refreshSteps(data.grid);
 				instruments[data.inst].getNotes(setNote);
 			}
 		break;
@@ -904,22 +907,25 @@ function TBDnote(startpos,endpos,data){
 		this.row = data.row;
 		this.$start = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+startpos+")");
 		this.$end = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+endpos+")");
+		//All of the html elements in the step
 		this.$els = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step").slice(this.on,this.off+1);
 		this.$startthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb:eq("+startpos+")");
 		this.$endthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb:eq("+endpos+")");
+		//All of the html elements in the thumb step
 		this.$elsthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb").slice(this.on,this.off+1);
+
+		//Add classes for appropriate styling
 		this.$els.addClass('clicked');
 		this.$els.removeClass('left right');
 		this.$elsthumb.addClass('clicked');
-
 		this.$end.addClass('right');
 		this.$start.addClass('left');
-		// var display = this.$els;
 		this.move = function(data){
 			this.$els.removeClass('left right clicked selected')
 			this.$elsthumb.removeClass('clicked');
 			this.row = data.row;
 			this.on = data.column;
+			//Shortens notes if brought to the edge
 			if(this.on<0){
 				this.on = 0;
 			}
@@ -927,6 +933,7 @@ function TBDnote(startpos,endpos,data){
 			if(this.off > 31){
 				this.off = 31;
 			}
+			// Reset the jquery to refer to the moved location
 			this.$start = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+this.on+")");
 			this.$end = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+(this.off)+")");
 			this.$els = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step").slice(this.on,this.off+1);
@@ -938,18 +945,61 @@ function TBDnote(startpos,endpos,data){
 			this.$elsthumb.addClass('clicked');
 			// display = this.$els;
 		}
+
+		this.inRange = function(on,off){
+			var isOverlapping = between(on,off,this.on) || between(on,off,this.off);
+			var isWrapped = between(this.on,this.off,on) || between(this.on,this.off,off)
+			console.log(isOverlapping,' that there is an overlap');
+			return isOverlapping || isWrapped;
+		}
+
 		this.update = function(){
 			this.$els.addClass('clicked').removeClass('highlighted');
 			this.$start.addClass('left');
 			this.$end.addClass('right');
 			this.$elsthumb.addClass('clicked');
 		}
+
 		this.delete = function(){
-			this.$els.removeClass('clicked left right clicked highlighted selected')
+			this.$els.removeClass('clicked left right highlighted selected')
+			this.$elsthumb.removeClass('clicked')
 		}
 
 		this.select = function(){
 			this.$els.addClass('clicked selected')
+		}
+
+		this.trimLeft = function(newOn,data){
+			this.$start.removeClass('left')
+			this.on = newOn;
+			this.len = this.off - this.on;
+			//Shortens notes if brought to the edge
+
+			// Reset the jquery to refer to the moved location
+			this.$start = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+this.on+")");
+			this.$els = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step").slice(this.on,this.off+1);
+			this.$elsthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb").slice(this.on,this.off+1);
+			this.$els.addClass('clicked');
+			this.$start.addClass('left');
+			this.$elsthumb.addClass('clicked');
+
+		}
+		this.trimRight = function(newOff,data){
+			this.$end.removeClass('right')
+
+			this.off = newOff;
+			this.len = this.off - this.on;
+			//Shortens notes if brought to the edge
+
+			// Reset the jquery to refer to the moved location
+
+			this.$end = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+(this.off)+")");
+			this.$els = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step").slice(this.on,this.off+1);
+			this.$elsthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb").slice(this.on,this.off+1);
+			this.$els.addClass('clicked');
+			this.$end.addClass('right');
+			this.$elsthumb.addClass('clicked');
+
 		}
 
 }
@@ -1040,6 +1090,55 @@ function getLastStep(data){
 	return thisStep
 }
 
+function between(lower,upper,check){
+	if(check >= lower && check <= upper){
+		return true;
+	}else{
+		return false;
+	}
+}
+
+function overlapType(moved, overlap){
+	if(between(moved.on,moved.off, overlap.off) && between(moved.on,moved.off, overlap.on)){
+		return 'covered'
+	}else if(!between(moved.on,moved.off, overlap.off) && !between(moved.on,moved.off, overlap.on)){
+		return 'wrapping'
+	}else if(between(moved.on,moved.off, overlap.off) && overlap.on < moved.on){
+		return 'onleft';
+	}else{
+		return 'onright';
+	}
+}
+
+function correctOverlaps(overlaps,overlapCase,moved,data){
+	for(i=0;i<overlaps.length;i++){
+		var currIx = instruments[data.inst].steps[data.grid].indexOf(overlaps[i]);
+		console.log('currIx  ', currIx);
+		switch(overlapCase[i]){
+			case 'covered':
+				data.noteIx = currIx;
+				deleteNote(data);
+
+			break;
+
+			case 'wrapping':
+			instruments[data.inst].steps[data.grid].push(new TBDnote(moved.off+1,overlaps[i].off,data));
+			instruments[data.inst].steps[data.grid][currIx].trimRight(moved.on-1,data)
+			console.log(overlaps[i]);
+
+			break;
+
+			case 'onleft':
+			instruments[data.inst].steps[data.grid][currIx].trimRight(moved.on-1,data)
+			break;
+			case 'onright':
+				instruments[data.inst].steps[data.grid][currIx].trimLeft(moved.off+1,data)
+			break;
+		}
+	}
+
+
+}
 
 
 
