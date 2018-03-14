@@ -8,6 +8,7 @@ const MongoClient = require('mongodb').MongoClient;
 const uri = 'mongodb://heroku_wzrt98pf:o60ajjk1lrsa5d23ohlf7auoes@ds117888.mlab.com:17888/heroku_wzrt98pf';
 const dbName = 'heroku_wzrt98pf';
 
+// allocate mem for instruments
 var instrumentArray = [];
 // session objects
 var sessions = [];
@@ -18,9 +19,9 @@ var clients = [];
 var roomID = "";
 var roomIndex = -1;
 var start = [];
+// step vars
 var selectedStep,clickOffset;
 var selectedSteps = [];
-
 var userThatClicked = [];
 
 app.use(express.static('public'));
@@ -37,12 +38,12 @@ app.get('/setup', function(req, res){
 
 // dynamic url for rooms
 app.get('/:dynamicroute', function(req,res) {
-  res.sendFile(__dirname + '/public/app.html')
+  res.sendFile(__dirname + '/public/app.html');
 });
 
 // check every five minutes for cleaning up old rooms, update db logs
 setInterval(function() {
-  console.log("Checking for timed-out sessions at current time ", new Date())
+  console.log("Checking for timed-out sessions at current time ", new Date());
   createLog("", new Date(), "checked session ages");
   checkSessionAge();
 }, 300000);
@@ -179,19 +180,25 @@ io.on('connection', function(socket){
 
   // distribute user step changes
   var offix;
-  socket.on('step', function(data){
-    // console.log(data.state)
+  socket.on('step', function(data) {
+    // reset states
     data.onleft = false;
     data.onright = false;
+
+    // erase notes
     if(data.mousemode === 1){
       data.state = '';
     }
+
+    // create single notes when user holds down shift
     data.state = data.shifted ? 'onoff':data.state;
+
+    // if note is a single step, create the note
     if(data.state === 'onoff'){
       sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].push(new TBDnote(data.column,data.column,data));
     }
 
-    // flipped = false;
+    // check that user cannot send consecutive 'on' messages
     if(data.state === 'on'){
       doubleCheck = userThatClicked.indexOf(data.user);
       if(doubleCheck > -1){
@@ -202,20 +209,13 @@ io.on('connection', function(socket){
       start.push(data.column);
     }
 
+    // finish note on mouseup
     if (data.state === 'off') {
       offix = userThatClicked.indexOf(data.user);
       if (data.column === start[offix]) {
         data.state = 'onoff';
       } else {
         data.flipped = data.column < start[offix] ? true : false;
-        // console.log('Flipped?:  ', data.flipped);
-        if(data.flipped){
-          sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][start[offix]].state = 'off';
-        } else {
-          if(start[offix]){
-            sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][start[offix]].state = 'on';
-          }
-        }
       }
       sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].push(new TBDnote(start[offix],data.column,data));
 
@@ -227,78 +227,88 @@ io.on('connection', function(socket){
       start.splice(offix,1);
     }
 
-    if(data.state === 'move'){
-      if(data.grab){
+    // drag an existing note to new location
+    if (data.state === 'move') {
+      // calculate offset from click location to start of note for dragging and repositioning
+      if (data.grab) {
         selectedStep = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].findIndex(function(el){
           return (el.row === data.row) && (el.on <= data.column) && (el.off >= data.column)
         });
-        if(selectedStep > -1){
+        if (selectedStep > -1) {
           clickOffset = data.column - sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][selectedStep].on;
         }
+        // push to array of selected steps
         selectedSteps.push({
           user: data.user,
           offset:clickOffset,
-          noteIx: selectedStep
+          noteIx: selectedStep,
         });
         data.offset = clickOffset;
       }
 
+      // filter for steps initiated by current user (to prevent confusion with simultaneous step dragging)
       var curr = selectedSteps.filter(a => a.user === data.user)[0];
-
-      if(curr.noteIx > -1){
+      if (curr.noteIx > -1) {
         data.offset = curr.offset;
         sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][curr.noteIx].move(data);
         data.noteIx = curr.noteIx;
       }
 
-      if(data.release){
+      // on release, set note at new location
+      if (data.release) {
         selectedSteps.splice(selectedSteps.findIndex(a =>a.user === data.user),1)
 
+        // get reference to moved note and check for overlap case
         var setNote = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][data.noteIx];
 				var overlappers = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].filter(
 					a => a.row === data.row && a.inRange(setNote.on,setNote.off));
 
-					//remove reference to the note that we're checking against
+				//remove reference to the note that we're checking against
 				overlappers.splice(overlappers.indexOf(setNote),1);
-        console.log('The overlappers:  ',overlappers,'  End');
-				 var overlapTypes = [];
+
+        // check overlap situation and visually correct
+        var overlapTypes = [];
 				overlappers.forEach(a => overlapTypes.push(overlapType(setNote,a)))
 				correctOverlaps(overlappers,overlapTypes, setNote,data);
       }
     }
 
-    if(data.mousemode === 2) {
-      for(i=0;i<3;i++){
-        if(data.row >= 0){
-          if(data.flipped){
+    // TODO: update with chord changes
+    // chord step interaction
+    if (data.mousemode === 2) {
+      for (i=0;i<3;i++) {
+        if (data.row >= 0) {
+          if (data.flipped) {
             sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = 'on';
           } else {
           sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = data.state;
           }
 
-          if(data.onleft && i){
+          if (data.onleft && i) {
             var left = sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state;
-              switch(left){
-                case 'sus':
-                  sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state = 'off';
+            switch (left) {
+              case 'sus':
+                sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state = 'off';
                 break;
-                case 'on':
-                  sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state = 'onoff';
-              }
+              case 'on':
+                sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state = 'onoff';
+                break;
+            }
           }
-          if(data.onright && i){
+
+          if (data.onright && i) {
             var right = sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state;
-            switch(right){
+            switch (right) {
               case 'sus':
                 sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'on';
                 data.onright = true;
-              break;
+                break;
               case 'off':
                 sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'onoff';
-              break;
+                break;
               case 'onoff':
                 sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'onoff';
-              break;
+                break;
             }
 
           }
@@ -307,29 +317,26 @@ io.on('connection', function(socket){
         }
       }
       createLog(data.roomID, new Date(), "step chord", data.user);
+
+      // set to clear if erasing
     } else if (data.mousemode === 1) {
       data.state = '';
-      sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = data.state;
       io.to(data.roomID).emit('stepreturn', data);
       createLog(data.roomID, new Date(), "step erased", data.user);
+
+      // sets to 'onoff' when holding shift
     } else {
       if(data.shifted){
         data.state = 'onoff';
-      }
-      if (data.flipped) {
-        sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = 'on';
-      } else {
-        if(data.state != 'move'){
-          sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = data.state;
-        }
       }
       io.to(data.roomID).emit('stepreturn', data);
     }
   });
 
+  // distribute delete setp msg
   socket.on('delete step',function(data){
-      sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].splice(data.noteIx,1);
-      io.to(data.roomID).emit('delete step return', data);
+    sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].splice(data.noteIx,1);
+    io.to(data.roomID).emit('delete step return', data);
   })
 
   // create new instrument and correstponding grid
@@ -347,8 +354,6 @@ io.on('connection', function(socket){
   // delete instrument
   socket.on('deletetab',function(data){
     sessions[getIx(data.roomID)].instruments.splice(data.tab2delete,1);
-    console.log('Delete the ',data.tab2delete);
-    console.log(sessions[getIx(data.roomID)].instruments)
     io.to(data.roomID).emit('deletereturn',data);
     createLog(data.roomID, new Date(), "deleted isntrument", data.user);
   })
@@ -359,49 +364,36 @@ io.on('connection', function(socket){
     sessions[getIx(data.roomID)].instruments[data.inst].clear(data.grid);
     // send clear message to clients
     io.emit('clearcurrentreturn',data);
-    console.log(data);
     createLog(data.roomID, new Date(), "grid cleared", data.user);
   });
 
-  socket.on('clearall', function(data){
-    // clear current grid state
-    console.log('Clear all')
-    for(var i = 0; i < sessions[getIx(data.roomID)].instruments.length; i++){
-      sessions[getIx(data.roomID)].instruments[i].clear();
-    }
-    // send clear messagw to clients
-    io.to(data.roomID).emit('clearallreturn');
-    createLog(data.roomID, new Date(), "all grids cleared", data.user);
-  });
-
+  // update tempo for all users
   socket.on('tempo', function(data){
     sessions[getIx(data.roomID)].tempo = data.tempo;
     io.to(data.roomID).emit('temporeturn', data);
     createLog(data.roomID, new Date(), "tempo changed", data.user);
   })
 
+  // horizontal reverse to all users
   socket.on('reversex',function(data){
-    // console.log(sessions[getIx(data.roomID)].instruments[data.inst].steps[0])
     sessions[getIx(data.roomID)].instruments[data.inst].reversex(data.gridix);
-    // console.log(sessions[getIx(data.roomID)].instruments[data.inst].grid);
     io.to(data.roomID).emit('reversexreturn',
     {
       inst:data.inst,
       grid:sessions[getIx(data.roomID)].instruments[data.inst].grid[data.gridix],
-      gridix: data.gridix
+      gridix: data.gridix,
     });
     createLog(data.roomID, new Date(), "x axis reversed", data.user);
   });
 
+  // vertical reverse
   socket.on('reversey',function(data){
-    console.log(sessions[getIx(data.roomID)].instruments[data.inst].steps[0][0])
     sessions[getIx(data.roomID)].instruments[data.inst].reversey(data.gridix);
-    console.log('Reversed the grid in '+data.roomID+'');
     io.to(data.roomID).emit('reverseyreturn',
     {
       inst:data.inst,
       grid:sessions[getIx(data.roomID)].instruments[data.inst].grid[data.gridix],
-      gridix: data.gridix
+      gridix: data.gridix,
     });
     createLog(data.roomID, new Date(), "y axis reversed", data.user);
   });
@@ -429,19 +421,6 @@ http.listen(port, function(){
   console.log('listening on *:', port);
 });
 
-function createGrid(rows,columns){
-  var newGrid = [];
-  var newRow = []
-  for(var i = 0; i < rows; i++){
-    for(var k = 0; k < columns; k++){
-      newRow.push(new step);
-    }
-    newGrid.push(newRow);
-    newRow = [];
-  }
-  return newGrid;
-}
-
 // instrument object
 function TBDinstrument(name, rows, cols, type, root, out){
 	this.rows = rows;
@@ -451,78 +430,123 @@ function TBDinstrument(name, rows, cols, type, root, out){
   this.root = root;
   this.out = out;
   this.steps = [[],[],[],[]];
-  if(type.rows){
+  // enable default row number
+  if (type.rows) {
     this.rows = type.rows;
-  }
-  this.grid = [];
-
-  // TODO: delete when we're done fixing up on/off grids
-  for(i=0;i<4;i++){
-    this.grid.push(createGrid(this.rows,cols));
   }
   this.clear = function(ix){
     this.steps[ix] = [];
   }
-
-  this.reversex = function(ix){
-    for(i=0;i<this.grid[ix].length;i++){
-      this.grid[ix][i].reverse();
-      for(j = 0;j<this.grid[ix][i].length;j++){
-        if(this.grid[ix][i][j].state === 'on' || this.grid[ix][i][j].state === 'off'){
-          this.grid[ix][i][j].state = this.grid[ix][i][j].state === 'on'? 'off':'on';
-        }
-      }
-    }
-  }
-
-  this.reversey = function(ix){
-    this.grid[ix].reverse();
-  }
 }
 
-function TBDnote(startpos,endpos,data){
-  if(data.flipped){
+// note object
+function TBDnote(startpos, endpos, data) {
+  // checks direction of note drawing (L->R, R->L)
+  if (data.flipped) {
     this.off = startpos;
     this.on = endpos
   } else {
     this.on = startpos;
     this.off = endpos;
   }
+
+  // create JSON for update new users of this instance
   this.data = {
     inst: data.inst,
     grid: data.grid,
     row:data.row
   }
+
+  // calculate and assing position
   this.len = Math.abs(endpos - startpos);
   this.row = data.row;
+
+  // dragging an existing note
   this.move = function(data){
     this.row = data.row;
     this.on = data.column-data.offset;
-    if(this.on<0){
+
+    // prevent dragging out of bounds to the left
+    if (this.on<0) {
       this.on = 0;
     }
+
+    // find note endpoint
     this.off = this.on + this.len;
+
+    // prevent dragging out of bounds to the right
     if(this.off > 31){
       this.off = 31;
     }
+
     this.data.row = data.row;
   }
-  this.trimRight = function(newOff){
+
+  // expand/contract note to right side
+  this.trimRight = function(newOff) {
     this.off = newOff;
     this.len = this.off-this.on;
   }
 
-  this.trimLeft = function(newOn){
+  // expand/contract note to left side
+  this.trimLeft = function(newOn) {
     this.on = newOn;
     this.len = this.off-newOn;
   }
 
-  this.inRange = function(on,off){
+  // check for overlapping notes
+  this.inRange = function(on,off) {
     var isOverlapping = between(on,off,this.on) || between(on,off,this.off);
     var isWrapped = between(this.on,this.off,on) || between(this.on,this.off,off)
-    console.log(isOverlapping,' that there is an overlap');
     return isOverlapping || isWrapped;
   }
+}
+
+// check for a note that falls completely in the middle of another note
+function between(lower, upper, check) {
+	if (check >= lower && check <= upper) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+// determine overlap type for moved note
+function overlapType(moved, overlap){
+	if (between(moved.on, moved.off, overlap.off) && between(moved.on, moved.off, overlap.on)) {
+		return 'covered';
+	} else if (!between(moved.on, moved.off, overlap.off) && !between(moved.on, moved.off, overlap.on)) {
+		return 'wrapping';
+	} else if (between(moved.on, moved.off, overlap.off) && overlap.on < moved.on) {
+		return 'onleft';
+	} else {
+		return 'onright';
+	}
+}
+
+// visually adjust overlapped note based on case
+function correctOverlaps(overlaps, overlapCase, moved, data) {
+	for (i=0; i<overlaps.length; i++) {
+		var currIx = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].indexOf(overlaps[i]);
+		switch(overlapCase[i]){
+			case 'covered':
+				sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].splice(currIx,1);
+			  break;
+
+			case 'wrapping':
+        sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].push(new TBDnote(moved.off+1,overlaps[i].off,data));
+        sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][currIx].trimRight(moved.on-1);
+        break;
+
+			case 'onleft':
+			  sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][currIx].trimRight(moved.on-1);
+			  break;
+
+      case 'onright':
+				sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][currIx].trimLeft(moved.off+1);
+			  break;
+		}
+	}
 }
 
 // session object
@@ -533,11 +557,6 @@ function session(roomID, socket){
   this.tempo = 120;
   this.created = 0;
   this.messages = [];
-
-  // TODO: callback in script.js to receive sync - this does nothing right now
-  this.sync = function(){
-    io.to(this.roomID).emit('joinSession');
-  }
 
   this.onConnection = function(socket){
     // send session data to new connection
@@ -553,7 +572,7 @@ function session(roomID, socket){
       {
         user: this.messages[i],
         message: this.messages[i+1],
-        roomID: this.roomID
+        roomID: this.roomID,
       });
     }
   }
@@ -576,14 +595,15 @@ function checkSessionAge() {
     if (new Date() - sessions[i].created > 86400000 * 5) {
       console.log("Removing " + sessions[i].roomID + ", created at: " + new Date(sessions[i].created));
       createLog(sessions[i].roomID, new Date(), "room removed");
-      sessions.splice(i,1);
-      rooms.splice(i,1);
+      sessions.splice(i, 1);
+      rooms.splice(i, 1);
       console.log(sessions.length + " sessions remain.")
     }
   }
   console.log("All sessions checked. " + sessions.length + " sessions remain.")
 }
 
+// create mongodb log
 function createLog(roomID, timestamp, activity, user, step_size, instrument) {
   var _id = new Date();
   _id = user + roomID + _id.getTime();
@@ -613,20 +633,19 @@ function createLog(roomID, timestamp, activity, user, step_size, instrument) {
   });
 }
 
+// find room index from rooms array
 function getIx(roomID){
   return rooms.indexOf(roomID);
 }
 
-function step(){
-  this.state = '';
-}
-
+// unique client object - user, room, and socket unique ID
 function client(socket, roomID, user) {
   this.client = socket;
   this.roomID = roomID;
   this.user = user;
 }
 
+// find client in client array
 function getClient(id) {
   for (var i=0; i<clients.length; i++) {
     if (clients[i].client.id == id) {
@@ -644,53 +663,7 @@ String.prototype.hashCode = function() {
     for (var i = 0; i < this.length; i++) {
         char = this.charCodeAt(i);
         hash = ((hash<<5)-hash)+char;
-        hash = hash & hash; // Convert to 32bit integer
+        hash = hash & hash;
     }
     return hash;
-}
-
-function between(lower,upper,check){
-	if(check >= lower && check <= upper){
-		return true;
-	}else{
-		return false;
-	}
-}
-
-function overlapType(moved, overlap){
-	if(between(moved.on,moved.off, overlap.off) && between(moved.on,moved.off, overlap.on)){
-		return 'covered'
-	}else if(!between(moved.on,moved.off, overlap.off) && !between(moved.on,moved.off, overlap.on)){
-		return 'wrapping'
-	}else if(between(moved.on,moved.off, overlap.off) && overlap.on < moved.on){
-		return 'onleft';
-	}else{
-		return 'onright';
-	}
-}
-
-function correctOverlaps(overlaps,overlapCase,moved,data){
-	for(i=0;i<overlaps.length;i++){
-		var currIx = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].indexOf(overlaps[i]);
-		console.log('currIx  ', currIx);
-		switch(overlapCase[i]){
-			case 'covered':
-				sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].splice(currIx,1);
-			break;
-
-			case 'wrapping':
-      sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].push(new TBDnote(moved.off+1,overlaps[i].off,data));
-      sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][currIx].trimRight(moved.on-1)
-
-			break;
-			case 'onleft':
-			sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][currIx].trimRight(moved.on-1)
-			break;
-			case 'onright':
-				sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][currIx].trimLeft(moved.off+1)
-			break;
-		}
-	}
-
-
 }

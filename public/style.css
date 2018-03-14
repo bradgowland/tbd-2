@@ -142,15 +142,15 @@ input {
 .grid{
     height: inherit;
     width:100%;
-    cursor:url(pencil.png) 5 5,auto;
+    cursor:url(images/pencil.png) 5 5,auto;
 }
 .grid.eraser{
-  cursor:url(eraser.png) 5 5,auto;
+  cursor:url(images/eraser.png) 5 5,auto;
 
 }
 
 .grid.chord{
-  cursor:url(chord.png) 5 5,auto;
+  cursor:url(images/chord.png) 5 5,auto;
 }
 
 .newInstrument{

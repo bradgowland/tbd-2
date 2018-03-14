@@ -3,43 +3,62 @@ var socket = io();
 
 // initialize values
 var rootNote = [21,45,69];
-// var rootNote = 45;
-var row, column, objGrid, lastCellLeft, twoCellsBack, tempo, ix, columnChanged;
-
 var columns = 32;
 var userThatClicked = false;
-var currentGridIndex = 0;var lastIx;
-var counter = 0;
-var currentThumb = 0;
-var tempo, messageSender;
-var columnChanged;
-var allRows,selectedOutput,searchIx,type;
-var instruments = [];
-var mousemode = 0;
-var reversing = false;
-var beatDuration = 500;
+var currentGridIndex = 0;
+
+// Setup
 var roomID = -1;
 var user = "";
 var users = [];
-var currInst;
 var refreshHistory = 1;
-var shifted;
-var start, $start;
+var mousemode = 0;
+var counter = 0;
+var currentThumb = 0;
+var type;
+var messageSender;
+var columnChanged;
+var instruments = [];
+var row, column, ix;
+
+// Click Callbacks
+var reversing = false;
 var clear;
 var lastcolumn;
 var passedStart;
-var chord; var $chord = [[],[]];
-var started;
-var stopcounter;
-var octave, offset;
-var move;
+var columnChanged;
+var twoCellsBack;
+var lastCellLeft;
+
+// MIDI
 var midiOut;
+
+// Tabs
+var lastIx;
+
+//Step related
+var move;
+var shifted;
+var start, $start;
+var chord;
+var $chord = [[],[]];
+var started;
+
+// Draw Loop
+var tempo;
+var stopcounter;
+// Instruments
+var octave;
+
+//Peristent note index to send delete
 var noteIx;
-var grabbing = false;
+
+// Setup for the p5 loop
 function setup(){
 	frameRate(8);
 	noLoop();
 }
+//Start by hidine the container to fade in
 $('.container').hide();
 
 // enable WebMIDI
@@ -64,7 +83,7 @@ WebMidi.enable(function(err){
 	$('#midi').val(WebMidi.outputs[iacIndex].name);
 	// Sets instrument MIDI outs
 	$('#midi').change(function(){
-		selectedOutput = $('option:selected', this).index()-1;
+		var selectedOutput = $('option:selected', this).index()-1;
 		if(selectedOutput < 0){
 			midiOut = 0;
 		}else{
@@ -72,8 +91,8 @@ WebMidi.enable(function(err){
 		}
 		// set output for whole thing
 		console.log(midiOut);
-	});
-});
+	})
+})
 
 // page interaction
 $(document).ready(function(){
@@ -130,7 +149,7 @@ $(document).ready(function(){
 		// update instruments
 		if(data.instruments){
 			for (var h = 0; h < data.instruments.length;h++){
-				currInst = data.instruments[h];
+				var currInst = data.instruments[h];
 				instruments.push(new TBDgrid(currInst.name,currInst.rows,currInst.cols,currInst.type,currInst.root,currInst.out));
 				for(i = 0; i < 4;i++){
 					if(currInst.steps[i].length){
@@ -153,6 +172,7 @@ $(document).ready(function(){
 		showTab(instruments.length);
 		currentGridIndex = instruments.length-1;
 		lastIx = currentGridIndex;
+		// TODO: set conditions so that it actually reads out when the val is not initialized
 		if(instruments[currentGridIndex] && currentGridIndex>-1) {
 			$('#output').val('Channel '+instruments[currentGridIndex].out);
 		} else {
@@ -160,6 +180,7 @@ $(document).ready(function(){
 		}
 		$('.thumbs:eq('+currentGridIndex+')').addClass('selected');
 		$('.container').fadeIn(1000);
+		// scroll to the middle of the $grid
 		$('.gridContainer').scrollTop(400);
 	});
 
@@ -167,12 +188,14 @@ $(document).ready(function(){
 	var mouseIsClicked = false;
 
 	// cell click
+	// TODO: make it so that this does not effect step move
 	$(document).on("mouseleave",'.selected .grid',function(){
 		mouseIsClicked = false;
 	});
 
+
 	$(document).on("mousedown",'.selected .row .step',function(){
-		// Sets whether pencil will be erasing or drawing
+
 		passedStart = false;
 		reversing = false;
 		columnChanged = false;
@@ -275,28 +298,29 @@ $(document).ready(function(){
 	socket.on('stepreturn',function(data){
 		stepReturn(data);
 	});
-
+	// Set up allow for the highlighting and selecting of steps
 	$(document).on("mouseover",".step.clicked",function(){
 		var $step = $(this);
 		var thisCol = $step.index();
+		// Searches for the note you're hovering over
 		var highlight= instruments[currentGridIndex].steps[currentThumb].findIndex(function(el){
 			return (el.row === $step.parent().index()) && (el.on <= thisCol) && (el.off >= thisCol)
 		});
-			if(highlight > -1){
-				instruments[currentGridIndex].steps[currentThumb][highlight].$els.addClass('highlighted');
-			}
-		}).on("mousedown",".clicked",function(){
+		if(highlight > -1){
+			instruments[currentGridIndex].steps[currentThumb][highlight].$els.addClass('highlighted');
+		}
+
+	}).on("mousedown",".clicked",function(){
 			var $step = $(this);
 			var thisCol = $step.index();
 			if(currentGridIndex > -1){
-			noteIx = instruments[currentGridIndex].steps[currentThumb].findIndex(function(el){
-				return (el.row === $step.parent().index()) && (el.on <= thisCol) && (el.off >= thisCol)
-			});
-		}
+				noteIx = instruments[currentGridIndex].steps[currentThumb].findIndex(function(el){
+					return (el.row === $step.parent().index()) && (el.on <= thisCol) && (el.off >= thisCol)
+				});
+			}
+			$('.selected .row .step').removeClass('selected');
 
-		$('.selected .row .step').removeClass('selected');
-
-		}).on("mouseleave", ".clicked",function(){
+	}).on("mouseleave", ".clicked",function(){
 			var $step = $(this);
 			var thisCol = $step.index();
 			var highlight = instruments[currentGridIndex].steps[currentThumb].findIndex(function(el){
@@ -305,7 +329,7 @@ $(document).ready(function(){
 			if(highlight > -1){
 				instruments[currentGridIndex].steps[currentThumb][highlight].$els.removeClass('highlighted');
 			}
-		});
+	});
 
 	// The tab toggler
 	$(document).on("click","ul.tabs li a",function(){
@@ -327,6 +351,7 @@ $(document).ready(function(){
 			$('.thumbs:eq('+currentGridIndex+')').addClass('selected');
 		}
 
+		// recall thumb within instrument when user switches
 		if(currentGridIndex > -1){
 			currentThumb = instruments[currentGridIndex].thumb;
 			$('.thumbs .grid').removeClass('selected');
@@ -356,11 +381,13 @@ $(document).ready(function(){
 		$('.tab-content:eq(1)').addClass('selected');
 	});
 
+	// track shift and alt for alternate click fns
 	$(document).on('keyup keydown', function(e){
 		shifted = e.shiftKey;
 		alted = e.altKey;
 	});
 
+	// distribute step delete to server
 	$(document).on('keydown', function(e){
 		if(e.keyCode === 8 && currentGridIndex > -1){
 			if(instruments[currentGridIndex].steps[currentThumb].length){
@@ -368,7 +395,7 @@ $(document).ready(function(){
 			}
 		}
 	});
-
+	// receive step delete msg from server
 	socket.on('delete step return',function(data){
 		deleteNote(data);
 		if(instruments[currentGridIndex].steps[currentThumb].length){
@@ -377,7 +404,7 @@ $(document).ready(function(){
 		}
 	});
 
-	//[drums,major,minor,blues,fullGrid,chords]
+	// Presets dropdown: [drums,major,minor,blues,fullGrid,chords]
 	$("#presets").change(function(){
 		type = $('option:selected', this).index()-1;
 		if(type>0){
@@ -389,11 +416,14 @@ $(document).ready(function(){
 		}
 	});
 
+	// octave/range on new inst dialog
 	$('#octave').change(function(){
 		octave = $('option:selected', this).index()-1;
 		console.log('which octave ',octave);
 	})
 
+	// TODO: do we need this? change?
+	// mousemode interaction types
 	$('#mousemode').change(function(){
 		$('.grid').removeClass('eraser');
 		mousemode = $('option:selected', this).index();
@@ -412,11 +442,13 @@ $(document).ready(function(){
 		}
 	})
 
+	// MIDI channel output
 	$('#output').change(function(){
 		$('option:selected', this).index();
 		instruments[currentGridIndex].out = $('option:selected', this).index();
 	})
 
+	// TODO: Update new instrument dialog
 	// create new instance from user menu specs
 	$(".newInsButton").click(function(){
 		var instName = $("#insName").val();
@@ -425,6 +457,7 @@ $(document).ready(function(){
 		var numToAppend = 1;
 		var names = instruments.map(a => a.name);
 
+		// disallow duplicate names
 		while(duplicates){
 			var dupIx = names.indexOf(instName);
 			if(dupIx > -1) {
@@ -438,6 +471,7 @@ $(document).ready(function(){
 			}
 		}
 
+		// make instrument with specified number of notes
 		var rowCount = $("#rowCount").val();
 		if(rowCount > 128){
 			rowCount = 128;
@@ -456,6 +490,7 @@ $(document).ready(function(){
 		}
 		userThatClicked = true;
 
+		// distribute new instrument details to all users
 		socket.emit('newInst',{
 			name: instName,
 			rows: rowCount,
@@ -466,6 +501,7 @@ $(document).ready(function(){
 		});
 	});
 
+	// receive new instrument created by other user
 	socket.on('newInstReturn',function(data){
 		instruments.push(new TBDgrid(data.name,data.rows,columns,data.type,data.root,data.out));
 		if(userThatClicked){
@@ -492,26 +528,13 @@ $(document).ready(function(){
 		});
 	});
 
-	$("#clearall").click(function(){
-		socket.emit('clearall',
-		{
-			roomID: roomID,
-			user: user
-		})
-	})
-
 	// update grid on clear
 	socket.on('clearcurrentreturn', function(data){
 		console.log(data);
 		instruments[data.inst].clear(data.grid);
 	});
 
-	socket.on('clearallreturn', function(){
-		for(var i = 0;i < instruments.length;i++){
-			instruments[i].clear(i);
-		}
-	});
-
+	// distribute tempo change
 	$('#tempo').change(function(){
 		tempo = $(this).val()
 		socket.emit('tempo',
@@ -522,12 +545,13 @@ $(document).ready(function(){
 		});
 	});
 
+	// receive tempo change
 	socket.on('temporeturn',function(data){
 		$('#tempo').val(data.tempo);
-		beatDuration = 1000*(60/(data.tempo*15));
 		frameRate(data.tempo/15);
 	});
 
+	// start/stop ticker
 	$('#startstop').click(function(){
 		$(this).toggleClass('started');
 		if($(this).hasClass('started')){
@@ -536,8 +560,8 @@ $(document).ready(function(){
 			stopcounter = false;
 			started = true;
 			loop();
-		}else{
-			for(var i = 0; i < instruments.length; i++){
+		} else {
+			for (var i = 0; i < instruments.length; i++) {
 				if(instruments[i].out && midiOut){
 					midiOut.stopNote('all','all')
 				}
@@ -549,6 +573,7 @@ $(document).ready(function(){
 		}
 	});
 
+	// distribute horizontal reverse
 	$('#reversex').click(function(){
 		socket.emit('reversex',
 		{
@@ -559,12 +584,14 @@ $(document).ready(function(){
 		});
 	});
 
+	// receive horizontal reverse
 	socket.on('reversexreturn',function(data){
 		instruments[data.inst].gridReversed(data.grid,data.inst,data.gridix);
 		console.log('inst:  ',data.inst);
 		console.log('grid:  ', data.grid);
 	})
 
+	// distribute vertical reverse
 	$('#reversey').click(function(){
 		socket.emit('reversey',
 		{
@@ -575,18 +602,20 @@ $(document).ready(function(){
 		});
 	});
 
+	// receive vertical reverse
 	socket.on('reverseyreturn',function(data){
 		instruments[data.inst].gridReversed(data.grid,data.inst,data.gridix);
 	})
 
+	// change thumb
 	$(document).on('click','.grid.little',function(){
 		var $gridThumbs = $('.grid.little');
 		$gridThumbs.removeClass('selected')
 		var $thumb = $(this);
-		console.log(currentThumb);
 
 		if(instruments[currentGridIndex].out && midiOut){
 			midiOut.stopNote('all',instruments[currentGridIndex].out);
+			// TODO: note off messages for instruments with aftertouch
 			console.log('Notes should have stopped');
 		}
 
@@ -595,15 +624,7 @@ $(document).ready(function(){
 		$('.tab-content.selected .grid').hide();
 		$('.tab-content.selected .grid:eq('+currentThumb+')').show();
 		$thumb.addClass('selected');
-	})
-
-	socket.on('getgridreturn',function(data){
-		if(messageSender){
-			instruments[data.inst].displayGrid(data.grid,data.inst,data.gridix);
-		}
-		messageSender = false;
-	})
-
+	});
 
 	// send a chat msg via click
 	$("#chatSend").click(function(){
@@ -632,9 +653,9 @@ $(document).ready(function(){
 		}
 	});
 
+	// delete an instrument tab
 	$(document).on('click','.deletetab',function(){
 		var tab2delete = $('.deletetab').index(this);
-		console.log('sending ix: ',currentGridIndex)
 		socket.emit('deletetab',
 		{
 			tab2delete: tab2delete,
@@ -643,68 +664,79 @@ $(document).ready(function(){
 		});
 	});
 
+	// receive deleted instrument message
 	socket.on('deletereturn',function(data){
 		ix = data.tab2delete+1;
 		$('.tab-link:eq('+ix+')').parent().remove();
 		$('.tab-content:eq('+ix+')').remove();
 		$('.thumbs:eq('+(ix-1)+')').remove();
+
 		var needsToToggle= lastIx >= ix-1 ? true:false;
-		console.log('needs to toggle?   ', needsToToggle);
 		ix-=1;
 		instruments.splice(ix,1);
+
+		// shift user position if underlying tab indexes
 		if(needsToToggle){
 			if(lastIx === 0){
 				lastIx = 1;
 			}
 
-			console.log('lastIx:  ', lastIx);
-			console.log('the index  ', lastIx, '  should be set to selected');
-
+			// update tab style
 			$('.tab-link:eq('+(lastIx)+')').addClass('selected');
 			$('.tab-content:eq('+(lastIx)+')').addClass('selected');
 			$('.thumbs:eq('+(lastIx-1)+')').addClass('selected');
+
 			currentGridIndex = lastIx - 1;
 		} else {
+			// update tab style
 			$('.tab-link:eq('+(lastIx+1)+')').addClass('selected');
 			$('.tab-content:eq('+(lastIx+1)+')').addClass('selected');
 			$('.thumbs:eq('+(lastIx)+')').addClass('selected');
+
 			currentGridIndex = lastIx;
+		}
+	});
+
+	// audition notes by clicking on row labels
+	$(document).on('mousedown','.rowlabel',function(){
+		var note = $(this).index();
+		var rowNum = instruments[currentGridIndex].rows;
+		note = instruments[currentGridIndex].type.midiNotes[rowNum-1-note]
+		if(instruments[currentGridIndex].out && midiOut){
+			midiOut.playNote(note, instruments[currentGridIndex].out);
+			midiOut.stopNote(note, instruments[currentGridIndex].out, {time: '+500'});
 		}
 	});
 });
 
-$(document).on('mousedown','.rowlabel',function(){
-	var note = $(this).index();
-	var rowNum = instruments[currentGridIndex].rows;
-	note = instruments[currentGridIndex].type.midiNotes[rowNum-1-note]
-	if(instruments[currentGridIndex].out && midiOut){
-		midiOut.playNote(note,instruments[currentGridIndex].out);
-		midiOut.stopNote(note,instruments[currentGridIndex].out,{time: '+500'});
-	}
-});
-
+// draw loop for p5 clock
 function draw() {
-	if(started){
-		counter = 0
+	if (started) {
+		counter = 0;
 		started = false;
-	}else{
+	} else {
 		counter += 1;
 		counter = counter % columns;
 	}
 
-	for(i=0;i<instruments.length;i++){
+	// play notes when ticker moves through columns
+	for (i=0; i<instruments.length; i++) {
 		var currThumb = instruments[i].thumb;
-		if(instruments[i].out && midiOut && instruments[i].notes.off[currThumb][counter]){
-			midiOut.stopNote(instruments[i].notes.off[currThumb][counter],instruments[i].out);
+		if (instruments[i].out && midiOut && instruments[i].notes.off[currThumb][counter]) {
+			midiOut.stopNote(instruments[i].notes.off[currThumb][counter], instruments[i].out);
 		}
-		if(instruments[i].out && midiOut && instruments[i].notes.on[currThumb][counter]){
-			midiOut.playNote(instruments[i].notes.on[currThumb][counter],instruments[i].out);
+		if (instruments[i].out && midiOut && instruments[i].notes.on[currThumb][counter]) {
+			midiOut.playNote(instruments[i].notes.on[currThumb][counter], instruments[i].out);
 		}
 	}
+	// move ticker
 	$('.step').removeClass('current');
-	if(!stopcounter){
-		allRows = $('.step:eq('+counter+')', '.row').toggleClass('current');
+
+	// highlight next column for ticker
+	if (!stopcounter) {
+		var allRows = $('.step:eq('+counter+')', '.row').toggleClass('current');
 	} else {
+		// error case if MIDI output is not configured
 		midiOut ? midiOut.stopNote('all'): console.error("You haven't set the MIDI out!");
 	}
 }
@@ -724,7 +756,7 @@ function messageSubmit() {
 		roomID: roomID
 	});
 
-    $('#chatInput').val('');
+  $('#chatInput').val('');
 }
 
 function showTab(index){
@@ -735,25 +767,25 @@ function showTab(index){
 }
 
 function stepReturn(data){
+	// each step and thumb received are saved as jQuery
+	// for real-time visual updating of all user interactions
 	var $step = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+")  .row:eq("+data.row+") .step:eq("+data.column+")");
 	var $stepthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb:eq("+data.column+")");
 
+	// check for interaction mode
 	if(data.mousemode === 1){
 		data.state = '';
 	}
-	switch(data.state){
+
+	// step interaction
+	switch(data.state) {
+		// clear a note
 		case '':
 			$step.removeClass('clicked left right');
-			if(data.onleft){
-				$left = $(".gridContainer:eq("+data.inst+")  .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+(data.column-1)+")");
-				$left.addClass('right');
-			}
-			if(data.onright){
-				$right = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+(data.column+1)+")");
-				$right.addClass('left');
-			}
 			$stepthumb.removeClass('clicked');
-		break;
+			break;
+
+		// user clicked to start a note
 		case 'on':
 			$step.addClass('clicked');
 			$start = $step;
@@ -761,7 +793,9 @@ function stepReturn(data){
 				$chord[0].push($step);
 			}
 			$stepthumb.addClass('clicked');
-		break;
+			break;
+
+		// single note
 		case 'onoff':
 			$step.addClass('clicked left right');
 			$stepthumb.addClass('clicked');
@@ -770,87 +804,110 @@ function stepReturn(data){
 			if(data.mousemode === 2){
 				$chord = [[],[]];
 			}
-		break;
+			break;
+
+		// sustaining note
 		case 'sus':
 			$step.removeClass('left right');
 			$step.addClass('clicked');
 			$stepthumb.addClass('clicked');
-		break;
+			break;
 
-	case 'move':
-	console.log(data.noteIx);
-
+		// moving steps
+		case 'move':
+			// get offset of click location from note on
 			data.column -= data.offset;
 			instruments[data.inst].steps[data.grid][data.noteIx].move(data);
+
+			// refresh jQuery to reflect instrument state on server
 			instruments[data.inst].refreshSteps(data.grid);
+
+			// complete note on mouseup
 			if(data.release){
 				$('.step').removeClass('grabbing');
 				var setNote = instruments[data.inst].steps[data.grid][data.noteIx];
+
+				// check for neighbors on new complete note
 				var neighbors = instruments[data.inst].steps[data.grid].filter(
 					a => a.row === data.row);
 
-					//remove reference to the note that we're checking against
-				neighbors.splice(neighbors.indexOf(setNote),1);
-				var overlappers = neighbors.filter(a=>a.inRange(setNote.on,setNote.off));
+				// check for overlapped steps in final step position
+				var overlappers = instruments[data.inst].steps[data.grid].filter(a =>
+					a.inRange(setNote.on,setNote.off) && (a.row === data.row));
+
+				// remove reference to the note that we're checking against
+				overlappers.splice(overlappers.indexOf(setNote),1);
+
+				// cases for different overlap situations
 				var overlapTypes = [];
-				overlappers.forEach(a => overlapTypes.push(overlapType(setNote,a)))
-				console.log(overlapTypes);
-				correctOverlaps(overlappers,overlapTypes, setNote,data);
+				overlappers.forEach(a => overlapTypes.push(overlapType(setNote, a)))
+				correctOverlaps(overlappers, overlapTypes, setNote,data);
+
+				// update new changes visually
 				instruments[data.inst].refreshSteps(data.grid);
 				instruments[data.inst].getNotes(setNote);
 			}
-		break;
+			break;
+
+		// note is finalized on mouseup
 		case 'off':
-			grabbing = false;
+			// TODO: update chord interaction for new step object
 			if(data.mousemode == 2){
 				$chord[1].push($step);
 			}
+			// check for drag direction (L->R, R->L)
 			if(data.flipped){
 					$end = $start;
 					$start = $step;
-					if($chord[0].length === $chord[1].length && data.mousemode===2){
+					if ($chord[0].length === $chord[1].length && data.mousemode === 2) {
 						$chord.reverse();
-						console.log("reversed for the chord");
 						chordUpdate($chord, data);
 						$chord = [[],[]];
 					}
 			} else {
 				$end = $step;
-				if($chord[0].length === $chord[1].length && data.mousemode===2){
-						console.log("reversed for the chord");
+				if ($chord[0].length === $chord[1].length && data.mousemode === 2) {
 						chordUpdate($chord, data);
 						$chord = [[],[]];
 				}
 			}
-			if(data.mousemode != 2){
-				if($start){
+
+			// put created note into array of active notes
+			if (data.mousemode != 2) {
+				if ($start) {
 					$start.addClass('left clicked');
 					instruments[data.inst].update($start,data.grid);
 				}
-				if($end){
+				if ($end) {
 					$end.addClass('right clicked');
 				}
+
+				// create new note object instance
 				instruments[data.inst].steps[data.grid].push(new TBDnote($start.index(),$end.index(),data));
 				instruments[data.inst].getNotes(getLastStep(data));
 			}
-		break;
+			break;
 	}
 }
 
-function TBDnote(startpos,endpos,data){
+function TBDnote(startpos,endpos,data) {
+	// start, end, length
 	this.on = startpos;
-	this.grid = data.grid;
 	this.off = endpos;
 	this.len = endpos - startpos;
-	var stepSelected = false;
+	// instrument of note
+	this.grid = data.grid;
+	// row of note
 	this.row = data.row;
+
+	// jQuery reference for starting and ending elements
 	this.$start = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+startpos+")");
 	this.$end = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+endpos+")");
-	//All of the html elements in the step
+
+	// Combine of the html elements in the step
 	this.$els = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step").slice(this.on,this.off+1);
-	this.$startthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb:eq("+startpos+")");
-	this.$endthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb:eq("+endpos+")");
-	//All of the html elements in the thumb step
+
+	// Combine all of the html elements in the thumb step
 	this.$elsthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb").slice(this.on,this.off+1);
 
 	//Add classes for appropriate styling
@@ -860,60 +917,69 @@ function TBDnote(startpos,endpos,data){
 	this.$end.addClass('right');
 	this.$start.addClass('left');
 
-	this.move = function(data){
+	this.move = function(data) {
+		// clear styling for previous step location
 		this.$els.removeClass('left right clicked selected')
 		this.$elsthumb.removeClass('clicked');
+
+		// reset new location
 		this.row = data.row;
 		this.on = data.column;
-		//Shortens notes if brought to the edge
-		if(this.on<0){
+
+		// edge case to shorten note at grid boundaries
+		if (this.on<0) {
 			this.on = 0;
 		}
 		this.off = data.column + this.len;
-		if(this.off > 31){
+		if (this.off > 31) {
 			this.off = 31;
 		}
+
 		// Reset the jquery to refer to the moved location
 		this.$start = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+this.on+")");
 		this.$end = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+(this.off)+")");
+
 		this.$els = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step").slice(this.on,this.off+1);
 		this.$elsthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb").slice(this.on,this.off+1);
-		this.$els.addClass('clicked');
+
 		this.$start.addClass('left');
 		this.$end.addClass('right');
-		this.$els.addClass('selected grabbing');
+
+		this.$els.addClass('clicked selected grabbing');
 		this.$elsthumb.addClass('clicked');
-		// display = this.$els;
 	}
 
-	this.inRange = function(on,off){
+	// check for element overlapping another by reference points
+	this.inRange = function(on, off) {
 		var isOverlapping = between(on,off,this.on) || between(on,off,this.off);
 		var isWrapped = between(this.on,this.off,on) || between(this.on,this.off,off)
-		console.log(isOverlapping,' that there is an overlap');
 		return isOverlapping || isWrapped;
 	}
 
-	this.update = function(){
+	// update styling as note is moved
+	this.update = function() {
 		this.$els.addClass('clicked').removeClass('highlighted');
 		this.$start.addClass('left');
 		this.$end.addClass('right');
 		this.$elsthumb.addClass('clicked');
 	}
 
-	this.delete = function(){
-		this.$els.removeClass('clicked left right highlighted selected')
-		this.$elsthumb.removeClass('clicked')
+	// remove all styling before deleting a note
+	this.delete = function() {
+		this.$els.removeClass('clicked left right highlighted selected');
+		this.$elsthumb.removeClass('clicked');
 	}
 
-	this.select = function(){
-		this.$els.addClass('clicked selected')
+	// select note for moving
+	this.select = function() {
+		this.$els.addClass('clicked selected');
 	}
 
-	this.trimLeft = function(newOn,data){
-		this.$start.removeClass('left')
+	// trim note at note on - left grid boundary
+	this.trimLeft = function(newOn, data) {
+		this.$start.removeClass('left');
 		this.on = newOn;
 		this.len = this.off - this.on;
-		//Shortens notes if brought to the edge
 
 		// Reset the jquery to refer to the moved location
 		this.$start = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+this.on+")");
@@ -924,26 +990,24 @@ function TBDnote(startpos,endpos,data){
 		this.$elsthumb.addClass('clicked');
 	}
 
-	this.trimRight = function(newOff,data){
-		this.$end.removeClass('right')
-
+	// trim note at note off - right grid boundary
+	this.trimRight = function(newOff, data) {
+		this.$end.removeClass('right');
 		this.off = newOff;
 		this.len = this.off - this.on;
-		//Shortens notes if brought to the edge
 
 		// Reset the jquery to refer to the moved location
-
 		this.$end = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+(this.off)+")");
 		this.$els = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step").slice(this.on,this.off+1);
 		this.$elsthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb").slice(this.on,this.off+1);
 		this.$els.addClass('clicked');
 		this.$end.addClass('right');
 		this.$elsthumb.addClass('clicked');
-
 	}
 }
 
-function sendStep(state){
+// send step to server
+function sendStep(state) {
 	socket.emit('step',{
 		row: row,
 		column: column,
@@ -953,11 +1017,12 @@ function sendStep(state){
 		user: user,
 		shifted: shifted,
 		state: state,
-		grid: currentThumb
+		grid: currentThumb,
 	});
 }
 
-function grabNote(){
+// grab note to move
+function grabNote() {
 	socket.emit('step',{
 		row: row,
 		column: column,
@@ -968,11 +1033,12 @@ function grabNote(){
 		shifted: shifted,
 		state: 'move',
 		grid: currentThumb,
-		grab: true
+		grab: true,
 	});
 }
 
-function releaseNote(){
+// drop note after moving
+function releaseNote() {
 	socket.emit('step',{
 		row: row,
 		column: column,
@@ -983,28 +1049,30 @@ function releaseNote(){
 		shifted: shifted,
 		state: 'move',
 		grid: currentThumb,
-		release: true
+		release: true,
 	});
 }
 
-function sendDelete(){
+// distribute deleted step message
+function sendDelete() {
 	socket.emit('delete step',{
 		inst: currentGridIndex,
 		grid: currentThumb,
 		noteIx: noteIx,
 		roomID: roomID,
-		user: user
+		user: user,
 	});
 }
 
-function deleteNote(data){
+// delete note
+function deleteNote(data) {
 	instruments[data.inst].removeNotes(instruments[data.inst].steps[data.grid][data.noteIx]);
 	instruments[data.inst].steps[data.grid][data.noteIx].delete();
-	instruments[data.inst].steps[data.grid].splice(data.noteIx,1)
+	instruments[data.inst].steps[data.grid].splice(data.noteIx, 1);
 }
 
-
-function chordUpdate($chord, data){
+// TODO: update chord stuff for new step obj
+function chordUpdate($chord, data) {
 	$chord[0].forEach(function(element){
 		element.removeClass('right');
 		element.addClass('left clicked')
@@ -1021,57 +1089,60 @@ function chordUpdate($chord, data){
 	}
 }
 
-function getLastStep(data){
+// retrieve last step in array to select newly created note
+function getLastStep(data) {
 	noteIx = instruments[data.inst].steps[data.grid].length;
 	noteIx -= 1;
 	var thisStep = instruments[data.inst].steps[data.grid][noteIx];
 	return thisStep;
 }
 
-function between(lower,upper,check){
-	if(check >= lower && check <= upper){
+// check if a note falls within another note
+function between(lower, upper, check) {
+	if (check >= lower && check <= upper) {
 		return true;
 	} else {
 		return false;
 	}
 }
 
-function overlapType(moved, overlap){
-	if(between(moved.on,moved.off, overlap.off) && between(moved.on,moved.off, overlap.on)){
+// differentiate between overlap situations
+function overlapType(moved, overlap) {
+	if (between(moved.on, moved.off, overlap.off) && between(moved.on,moved.off, overlap.on)) {
 		return 'covered'
-	} else if (!between(moved.on,moved.off, overlap.off) && !between(moved.on,moved.off, overlap.on)){
+	} else if (!between(moved.on, moved.off, overlap.off) && !between(moved.on,moved.off, overlap.on)) {
 		return 'wrapping'
-	} else if (between(moved.on,moved.off, overlap.off) && overlap.on < moved.on){
+	} else if (between(moved.on, moved.off, overlap.off) && overlap.on < moved.on) {
 		return 'onleft';
 	} else {
 		return 'onright';
 	}
 }
 
-function correctOverlaps(overlaps,overlapCase,moved,data){
-	for(i=0;i<overlaps.length;i++){
+// update styling based on overlap type
+function correctOverlaps(overlaps, overlapCase, moved, data) {
+	for (i=0; i<overlaps.length; i++) {
 		var currIx = instruments[data.inst].steps[data.grid].indexOf(overlaps[i]);
-		console.log('currIx  ', currIx);
-		switch(overlapCase[i]){
+
+		// apply overlap types
+		switch (overlapCase[i]) {
 			case 'covered':
 				data.noteIx = currIx;
 				deleteNote(data);
-
-			break;
+				break;
 
 			case 'wrapping':
-			instruments[data.inst].steps[data.grid].push(new TBDnote(moved.off+1,overlaps[i].off,data));
-			instruments[data.inst].steps[data.grid][currIx].trimRight(moved.on-1,data)
-			console.log(overlaps[i]);
-
-			break;
+				instruments[data.inst].steps[data.grid].push(new TBDnote(moved.off+1,overlaps[i].off,data));
+				instruments[data.inst].steps[data.grid][currIx].trimRight(moved.on-1,data);
+				break;
 
 			case 'onleft':
-			instruments[data.inst].steps[data.grid][currIx].trimRight(moved.on-1,data)
-			break;
+				instruments[data.inst].steps[data.grid][currIx].trimRight(moved.on-1,data);
+				break;
+
 			case 'onright':
-				instruments[data.inst].steps[data.grid][currIx].trimLeft(moved.off+1,data)
-			break;
+				instruments[data.inst].steps[data.grid][currIx].trimLeft(moved.off+1,data);
+				break;
 		}
 	}
 }
