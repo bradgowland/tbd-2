@@ -177,9 +177,8 @@ io.on('connection', function(socket){
     console.log("Users in ", roomID, ": ", sessions[roomIndex].users);
   });
 
-
-  var offix;
   // distribute user step changes
+  var offix;
   socket.on('step', function(data){
     // console.log(data.state)
     data.onleft = false;
@@ -200,48 +199,7 @@ io.on('connection', function(socket){
         start.splice(doubleCheck,1);
       }
       userThatClicked.push(data.user);
-      // console.log(' User '+data.user+'clicked ',data.column);
       start.push(data.column);
-
-    }
-
-
-
-    if(data.state === ''){
-      //left of this cell.
-      // if(data.column>0){
-      // var left = sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state;
-      //   switch(left){
-      //     case 'sus':
-      //     sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state = 'off';
-      //     data.onleft = true;
-      //     break;
-      //     case 'on':
-      //     sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state = 'onoff';
-      //     data.onleft = true;
-      //     break;
-      //     default: data.onleft = false;
-      //   }
-      // }
-
-      // if(data.column < sessions[getIx(data.roomID)].instruments[data.inst].cols - 1){
-      //   var right = sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state;
-      //   switch(right){
-      //     case 'sus':
-      //     sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'on';
-      //     data.onright = true;
-      //     break;
-      //     case 'off':
-      //     sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'onoff';
-      //     data.onright = true;
-      //     break;
-      //     case 'onoff':
-      //     data.onright = true;
-      //     sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'onoff';
-      //     break;
-      //     default: data.onright = false;
-      //   }
-      // }
     }
 
     if (data.state === 'off') {
@@ -255,8 +213,8 @@ io.on('connection', function(socket){
           sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][start[offix]].state = 'off';
         } else {
           if(start[offix]){
-          sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][start[offix]].state = 'on';
-        }
+            sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][start[offix]].state = 'on';
+          }
         }
       }
       sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].push(new TBDnote(start[offix],data.column,data));
@@ -275,27 +233,21 @@ io.on('connection', function(socket){
           return (el.row === data.row) && (el.on <= data.column) && (el.off >= data.column)
         });
         if(selectedStep > -1){
-        clickOffset = data.column - sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][selectedStep].on;
-      }else{
-        // console.log(data);
-      }
+          clickOffset = data.column - sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][selectedStep].on;
+        }
         selectedSteps.push({
           user: data.user,
           offset:clickOffset,
           noteIx: selectedStep
         });
-        // console.log('selectedSteps',selectedSteps);
         data.offset = clickOffset;
       }
 
-
       var curr = selectedSteps.filter(a => a.user === data.user)[0];
 
-      // console.log(curr);
       if(curr.noteIx > -1){
         data.offset = curr.offset;
         sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][curr.noteIx].move(data);
-        // console.log(sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][selectedStep]);
         data.noteIx = curr.noteIx;
       }
 
@@ -319,8 +271,8 @@ io.on('connection', function(socket){
       for(i=0;i<3;i++){
         if(data.row >= 0){
           if(data.flipped){
-          sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = 'on';
-          }else{
+            sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = 'on';
+          } else {
           sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = data.state;
           }
 
@@ -328,31 +280,30 @@ io.on('connection', function(socket){
             var left = sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state;
               switch(left){
                 case 'sus':
-                sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state = 'off';
+                  sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state = 'off';
                 break;
                 case 'on':
-                sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state = 'onoff';
+                  sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state = 'onoff';
               }
           }
           if(data.onright && i){
             var right = sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state;
             switch(right){
               case 'sus':
-              sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'on';
-              data.onright = true;
+                sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'on';
+                data.onright = true;
               break;
               case 'off':
-              sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'onoff';
+                sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'onoff';
               break;
               case 'onoff':
-              sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'onoff';
+                sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'onoff';
               break;
             }
 
           }
           io.to(data.roomID).emit('stepreturn', data);
           data.row -= 2;
-
         }
       }
       createLog(data.roomID, new Date(), "step chord", data.user);
@@ -369,13 +320,10 @@ io.on('connection', function(socket){
         sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = 'on';
       } else {
         if(data.state != 'move'){
-        sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = data.state;
+          sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = data.state;
+        }
       }
-      }
-      // send step to clients
-
       io.to(data.roomID).emit('stepreturn', data);
-
     }
   });
 
@@ -393,7 +341,7 @@ io.on('connection', function(socket){
 
   socket.on('getgrid',function(data){
     data.grid = sessions[getIx(data.roomID)].instruments[data.inst].grid[data.gridix];
-  io.to(data.roomID).emit('getgridreturn', data);
+    io.to(data.roomID).emit('getgridreturn', data);
   })
 
   // delete instrument
@@ -421,7 +369,6 @@ io.on('connection', function(socket){
     for(var i = 0; i < sessions[getIx(data.roomID)].instruments.length; i++){
       sessions[getIx(data.roomID)].instruments[i].clear();
     }
-
     // send clear messagw to clients
     io.to(data.roomID).emit('clearallreturn');
     createLog(data.roomID, new Date(), "all grids cleared", data.user);
@@ -459,8 +406,6 @@ io.on('connection', function(socket){
     createLog(data.roomID, new Date(), "y axis reversed", data.user);
   });
 
-
-
   // msg to all users
   socket.on('chat to server', function(data){
     // distribute message
@@ -477,9 +422,6 @@ io.on('connection', function(socket){
     }
     createLog(data.roomID, new Date(), "chat sent", data.user);
   });
-
-  // additional callbacks here
-
 });
 
 // local server connection
@@ -496,7 +438,6 @@ function createGrid(rows,columns){
     }
     newGrid.push(newRow);
     newRow = [];
-
   }
   return newGrid;
 }
@@ -514,6 +455,7 @@ function TBDinstrument(name, rows, cols, type, root, out){
     this.rows = type.rows;
   }
   this.grid = [];
+
   // TODO: delete when we're done fixing up on/off grids
   for(i=0;i<4;i++){
     this.grid.push(createGrid(this.rows,cols));
@@ -536,16 +478,15 @@ function TBDinstrument(name, rows, cols, type, root, out){
   this.reversey = function(ix){
     this.grid[ix].reverse();
   }
-
 }
 
 function TBDnote(startpos,endpos,data){
   if(data.flipped){
     this.off = startpos;
     this.on = endpos
-  }else{
-  this.on = startpos;
-  this.off = endpos;
+  } else {
+    this.on = startpos;
+    this.off = endpos;
   }
   this.data = {
     inst: data.inst,
@@ -740,7 +681,6 @@ function correctOverlaps(overlaps,overlapCase,moved,data){
 			case 'wrapping':
       sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].push(new TBDnote(moved.off+1,overlaps[i].off,data));
       sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][currIx].trimRight(moved.on-1)
-
 
 			break;
 			case 'onleft':
