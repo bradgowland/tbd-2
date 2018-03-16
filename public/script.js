@@ -47,11 +47,15 @@ var started;
 // Draw Loop
 var tempo;
 var stopcounter;
+
 // Instruments
 var octave;
 
-//Peristent note index to send delete
+// Peristent note index to send delete
 var noteIx;
+
+// Notification timeout queue
+var timeout_queue = [];
 
 // Setup for the p5 loop
 function setup(){
@@ -142,6 +146,8 @@ $(document).ready(function(){
 	// get updated list of users after new member joins room
 	socket.on('update users', function(data){
 		users = data.users;
+		// notify
+		notification(data.user, user, "new_user");
 	});
 
 	// get current grid state from server
@@ -195,7 +201,6 @@ $(document).ready(function(){
 
 
 	$(document).on("mousedown",'.selected .row .step',function(){
-
 		passedStart = false;
 		reversing = false;
 		columnChanged = false;
@@ -515,6 +520,9 @@ $(document).ready(function(){
 			currentThumb = instruments[currentGridIndex].thumb;
 			userThatClicked = false;
 		}
+
+		// notify
+		notification(data.user, user, "new_inst");
 	});
 
 	// clear grid
@@ -642,8 +650,12 @@ $(document).ready(function(){
 
 	// receive msg and update list
 	socket.on('chat to client', function(data){
+			// update message list
 			refreshHistory = 0;
 			$('.messages').append($('<li>').html('<i>' + data.user + ": " + '</i>' + data.message));
+
+			// notify
+			notification(data.user, user, "msg");
 	});
 
 	// update chat history for new connection
@@ -695,6 +707,9 @@ $(document).ready(function(){
 
 			currentGridIndex = lastIx;
 		}
+
+		// notify
+		notification(data.user, user, "delete_inst");
 	});
 
 	// audition notes by clicking on row labels
@@ -1144,5 +1159,49 @@ function correctOverlaps(overlaps, overlapCase, moved, data) {
 				instruments[data.inst].steps[data.grid][currIx].trimLeft(moved.off+1,data);
 				break;
 		}
+	}
+}
+
+// notification function
+function notification(sender, user, type) {
+	// clear old timeouts
+	for (var i = timeout_queue.length-1; i >= 0; i--) {
+		clearTimeout(timeout_queue[i]);
+		timeout_queue.splice(i, 1);
+	}
+
+	// only notify if other user initiates action
+	if (sender != user) {
+		// parse type
+		var notification = "";
+		switch (type) {
+			case "msg":
+				notification = sender + " sent a message."
+				break;
+			case "new_inst":
+				notification = sender + " created a new instrument."
+				break;
+			case "delete_inst":
+				notification = sender + " deleted an instrument."
+				break;
+			case "new_user":
+				notification = sender + " joined the room."
+				break;
+		}
+
+		// show notification with appropriate type
+		$('.notif').fadeIn();
+		$('.notif_text').fadeIn();
+		$('.notif_text').html(notification);
+
+		// close and clear notificaiton after six seconds
+		var timeout_id = setTimeout(function(){
+			$('.notif').fadeOut();
+			$('.notif_text').fadeOut();
+			$('.notif_text').html("");
+		}, 6000);
+
+		// add timeout to queue
+		timeout_queue.push(timeout_id);
 	}
 }

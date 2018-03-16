@@ -161,7 +161,7 @@ io.on('connection', function(socket){
     roomID = data.roomID;
     user = data.user;
 
-    // TODO: capture client details
+    // capture client details
     clients.push(new client(socket, roomID, user));
     console.log("New client. Socket: ", socket.id, ", roomID: ", roomID, ", user: ", user);
     console.log("All clients: ", clients);
@@ -172,7 +172,10 @@ io.on('connection', function(socket){
     createLog(roomID, new Date(), "user added to room", user);
 
     // send full user list to all users in rooms
-    io.to(data.roomID).emit('update users', {users: sessions[roomIndex].users});
+    io.to(data.roomID).emit('update users', {
+      user: user,
+      users: sessions[roomIndex].users,
+    });
 
     // console check
     console.log("Users in ", roomID, ": ", sessions[roomIndex].users);
