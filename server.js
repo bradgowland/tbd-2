@@ -183,6 +183,7 @@ io.on('connection', function(socket){
 
   // distribute user step changes
   var offix;
+
   socket.on('step', function(data) {
     // reset states
     data.onleft = false;
@@ -192,6 +193,9 @@ io.on('connection', function(socket){
     if(data.mousemode === 1){
       data.state = '';
     }
+
+    // capture user color
+    data.color = sessions[getIx(data.roomID)].user_colors[sessions[getIx(data.roomID)].users.indexOf(data.user)];
 
     // create single notes when user holds down shift
     data.state = data.shifted ? 'onoff':data.state;
@@ -556,6 +560,9 @@ function correctOverlaps(overlaps, overlapCase, moved, data) {
 function session(roomID, socket){
   this.roomID = roomID;
   this.users = [];
+  this.user_colors = ['chartreuse', 'orchid', 'yellow', 'cyan', 'amber', 'aqua', 'green', 'pink',
+        'purple', 'light-green', 'deep-purple', 'indigo', 'blue', 'sand', 'teal',
+        'khaki', 'light-blue', 'red'];
   this.instruments = [];
   this.tempo = 120;
   this.created = 0;

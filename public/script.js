@@ -372,7 +372,6 @@ $(document).ready(function(){
 
 	});
 
-
 	// update style on '+' button
 	$('#plus').mousedown(function(){
 		$('.newInstrument').toggleClass("clicked");
@@ -803,6 +802,13 @@ function stepReturn(data){
 		// user clicked to start a note
 		case 'on':
 			$step.addClass('clicked');
+
+			// apply user specific styling if not initiated by this user
+			if (data.user != user) {
+				$step.css('border-top', 'solid ' + data.color + ' 1px');
+				$step.css('border-bottom', 'solid ' + data.color + ' 1px');
+			}
+
 			$start = $step;
 			if(data.mousemode == 2){
 				$chord[0].push($step);
@@ -814,6 +820,15 @@ function stepReturn(data){
 		case 'onoff':
 			$step.addClass('clicked left right');
 			$stepthumb.addClass('clicked');
+
+			// apply user specific styling if not initiated by this user
+			if (data.user != user) {
+				$step.css('border-top', 'solid ' + data.color + ' 1px');
+				$step.css('border-bottom', 'solid ' + data.color + ' 1px');
+				$step.css('border-left', 'solid ' + data.color + ' 1px');
+				$step.css('border-right', 'solid ' + data.color + ' 1px');
+			}
+
 			instruments[data.inst].steps[data.grid].push(new TBDnote($step.index(),$step.index(),data));
 			instruments[data.inst].getNotes(getLastStep(data));
 			if(data.mousemode === 2){
@@ -825,6 +840,12 @@ function stepReturn(data){
 		case 'sus':
 			$step.removeClass('left right');
 			$step.addClass('clicked');
+			// apply user specific styling if not initiated by this user
+			if (data.user != user) {
+				$step.css('border-top', 'solid ' + data.color + ' 1px');
+				$step.css('border-bottom', 'solid ' + data.color + ' 1px');
+				$step.css('border-right', 'solid black 1px');
+			}
 			$stepthumb.addClass('clicked');
 			break;
 
@@ -892,9 +913,19 @@ function stepReturn(data){
 				if ($start) {
 					$start.addClass('left clicked');
 					instruments[data.inst].update($start,data.grid);
+
+					// apply user specific styling if not initiated by this user
+					if (data.user != user) {
+						$start.css('border-left', 'solid ' + data.color + ' 1px');
+					}
 				}
 				if ($end) {
 					$end.addClass('right clicked');
+
+					// apply user specific styling if not initiated by this user
+					if (data.user != user) {
+						$step.css('border-right', 'solid ' + data.color + ' 1px');
+					}
 				}
 
 				// create new note object instance
@@ -1026,6 +1057,7 @@ function sendStep(state) {
 	socket.emit('step',{
 		row: row,
 		column: column,
+		color: '',
 		inst: currentGridIndex,
 		roomID: roomID,
 		mousemode: mousemode,
