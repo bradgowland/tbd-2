@@ -146,9 +146,21 @@ $(document).ready(function(){
 
 	// get updated list of users after new member joins room
 	socket.on('update users', function(data){
+		// update user list
 		users = data.users;
-		// notify
-		notification(data.user, user, "new_user");
+
+		// update visual user list
+		$('#userList').html('<div class="ital_text">Users</div>');
+		for (var i = 0; i < users.length; i++) {
+			$('#userList').append('<div class="user" style="background: '+ data.user_colors[i] +'"><div class="user_text">' + users[i] + '</div></div>');
+		}
+
+		// determine notification for connection or disconnection
+		if (data.type == 'connect') {
+			notification(data.user, user, "new_user");
+		} else {
+			notification(data.user, user, "disconnect");
+		}
 	});
 
 	// get current grid state from server
@@ -179,6 +191,7 @@ $(document).ready(function(){
 		showTab(instruments.length);
 		currentGridIndex = instruments.length-1;
 		lastIx = currentGridIndex;
+
 		// TODO: set conditions so that it actually reads out when the val is not initialized
 		if(!instruments[currentGridIndex].out === null) {
 			$('#output').val('Channel '+instruments[currentGridIndex].out);
@@ -407,7 +420,6 @@ $(document).ready(function(){
 		}
 
 	});
-
 
 	// update style on '+' button
 	$('#plus').mousedown(function(){
@@ -852,6 +864,7 @@ function stepReturn(data){
 		// user clicked to start a note
 		case 'on':
 			$step.addClass('clicked');
+
 			$start = $step;
 			if(data.mousemode == 2){
 				$chord[0].push($step);
@@ -863,6 +876,7 @@ function stepReturn(data){
 		case 'onoff':
 			$step.addClass('clicked left right');
 			$stepthumb.addClass('clicked');
+
 			instruments[data.inst].steps[data.grid].push(new TBDnote($step.index(),$step.index(),data));
 			instruments[data.inst].getNotes(getLastStep(data));
 			if(data.mousemode === 2){
@@ -892,7 +906,8 @@ function stepReturn(data){
 			instruments[data.inst].refreshSteps(data.grid);
 
 			// complete note on mouseup
-			if(data.release){
+			if(data.release) {
+				// remove all prior styling
 				$('.step').removeClass('grabbing');
 				var setNote = instruments[data.inst].steps[data.grid][data.noteIx];
 				instruments[data.inst].steps[data.grid][data.noteIx].updateUser(data.user);
@@ -1343,6 +1358,9 @@ function notification(sender, user, type) {
 				break;
 			case "delete_inst":
 				notification = sender + " deleted an instrument."
+				break;
+			case "disconnect":
+				notification = sender + " left the room."
 				break;
 			case "new_user":
 				notification = sender + " joined the room."

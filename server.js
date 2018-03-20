@@ -69,13 +69,28 @@ io.on('connection', function(socket){
         // find room and user
         var roomIndex = rooms.indexOf(clients[clientIx].roomID);
         var userIndex = sessions[roomIndex].users.indexOf(clients[clientIx].user);
-
-        console.log("User ", clients[clientIx].user, " disconnected from room ", clients[clientIx].roomID);
+        var user = clients[clientIx].user;
+        var roomID = clients[clientIx].roomID;
+        console.log("User ", user, " disconnected from room ", roomID);
 
         // remove user and client
-        sessions[roomIndex].users.splice(clients[clientIx], 1);
+        sessions[roomIndex].users.splice(userIndex, 1);
         clients.splice(clientIx, 1);
-        console.log("Remaining clients: ", clients);
+        console.log('Remaining users: ', sessions[roomIndex].users);
+
+        // move color of disconnected user to end of color queue
+        var temp = sessions[roomIndex].user_colors.splice(userIndex, 1)[0];
+        sessions[roomIndex].user_colors.push(temp);
+
+        // send new user list to all users in rooms
+        io.to(roomID).emit('update users', {
+          type: 'disconnect',
+          user: user,
+          users: sessions[roomIndex].users,
+          user_colors: sessions[roomIndex].user_colors,
+        });
+
+        console.log('Current color list: ', sessions[roomIndex].user_colors);
       }
     }
   });
@@ -166,8 +181,6 @@ io.on('connection', function(socket){
 
     // capture client details
     clients.push(new client(socket, roomID, user));
-    console.log("New client. Socket: ", socket.id, ", roomID: ", roomID, ", user: ", user);
-    console.log("All clients: ", clients);
 
     // find room, add user
     roomIndex = rooms.indexOf(roomID);
@@ -176,8 +189,10 @@ io.on('connection', function(socket){
 
     // send full user list to all users in rooms
     io.to(data.roomID).emit('update users', {
+      type: 'connect',
       user: user,
       users: sessions[roomIndex].users,
+      user_colors: sessions[roomIndex].user_colors,
     });
 
     // console check
@@ -186,6 +201,7 @@ io.on('connection', function(socket){
 
   // distribute user step changes
   var offix;
+
   socket.on('step', function(data) {
     // reset states
     data.onleft = false;
@@ -602,6 +618,9 @@ function correctOverlaps(overlaps, overlapCase, moved, data) {
 function session(roomID, socket){
   this.roomID = roomID;
   this.users = [];
+  this.user_colors = ['chartreuse', 'orchid', 'yellow', 'cyan', 'green', 'aqua', 'pink',
+        'purple', 'light-green', 'deep-purple', 'indigo', 'blue', 'sand', 'teal',
+        'khaki', 'light-blue', 'red'];
   this.instruments = [];
   this.tempo = 120;
   this.created = 0;
