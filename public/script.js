@@ -178,6 +178,7 @@ $(document).ready(function(){
 		showTab(instruments.length);
 		currentGridIndex = instruments.length-1;
 		lastIx = currentGridIndex;
+
 		// TODO: set conditions so that it actually reads out when the val is not initialized
 		if(instruments[currentGridIndex] && currentGridIndex>-1) {
 			$('#output').val('Channel '+instruments[currentGridIndex].out);
@@ -859,7 +860,8 @@ function stepReturn(data){
 			instruments[data.inst].refreshSteps(data.grid);
 
 			// complete note on mouseup
-			if(data.release){
+			if(data.release) {
+				// remove all prior styling
 				$('.step').removeClass('grabbing');
 				var setNote = instruments[data.inst].steps[data.grid][data.noteIx];
 
