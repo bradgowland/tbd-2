@@ -402,31 +402,31 @@ input {
 }
 
 .step.clicked.highlighted{
-  border-top: solid red 2px;
-  border-bottom:solid red 2px;
+  border-top: solid gray 2px;
+  border-bottom:solid gray 2px;
 }
 
 
 
 .step.selected{
-  border-top: solid red 2px;
-  border-bottom:solid red 2px;
+  border-top: solid gray 2px;
+  border-bottom:solid gray 2px;
 }
 
 .step.selected.left{
-  border-left: solid red 2px;
+  border-left: solid gray 2px;
 }
 
 .step.selected.right{
-  border-right: solid red 2px;
+  border-right: solid gray 2px;
 }
 
 .step.clicked.left.highlighted{
-  border-left: solid red 2px;
+  border-left: solid gray 2px;
 
 }
 .step.clicked.right.highlighted{
-  border-right:solid red 2px;
+  border-right:solid gray 2px;
 }
 
 .step.current{
@@ -507,6 +507,10 @@ input {
   text-align: center;
 }
 
+#output{
+  width: auto;
+  text-align: center;
+}
 .reverse{
   height:80px;
   position:static;
