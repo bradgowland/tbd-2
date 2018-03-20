@@ -266,7 +266,7 @@ io.on('connection', function(socket){
 
         // get reference to moved note and check for overlap case
         var setNote = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][data.noteIx];
-				var overlappers = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].filter(
+        var overlappers = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].filter(
 					a => a.row === data.row && a.inRange(setNote.on,setNote.off));
 
 				//remove reference to the note that we're checking against
@@ -309,7 +309,6 @@ io.on('connection', function(socket){
       if(data.release){
         trims.splice(trims.findIndex(a=>a.user===data.user),1);
         var trimmedStep = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][data.noteIx]
-
         // Delete note if it is fully trimmed away
         if(trimmedStep.on > trimmedStep.off){
 
@@ -500,7 +499,8 @@ function TBDnote(startpos, endpos, data) {
   this.data = {
     inst: data.inst,
     grid: data.grid,
-    row:data.row
+    row:data.row,
+    user:data.user,
   }
 
   // calculate and assing position
@@ -526,18 +526,21 @@ function TBDnote(startpos, endpos, data) {
     }
 
     this.data.row = data.row;
+    this.data.user = data.user;
   }
 
   // expand/contract note to right side
   this.trimRight = function(newOff) {
     this.off = newOff;
     this.len = this.off-this.on;
+    this.data.user = data.user;
   }
 
   // expand/contract note to left side
   this.trimLeft = function(newOn) {
     this.on = newOn;
     this.len = this.off-newOn;
+    this.data.user = data.user;
   }
 
   // check for overlapping notes

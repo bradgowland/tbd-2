@@ -30,9 +30,6 @@ var columnChanged;
 var twoCellsBack;
 var lastCellLeft;
 var trimLeft, trimRight, trimSingle;
-
-var userLeft = false;
-
 // MIDI
 var midiOut;
 
@@ -183,11 +180,13 @@ $(document).ready(function(){
 		currentGridIndex = instruments.length-1;
 		lastIx = currentGridIndex;
 		// TODO: set conditions so that it actually reads out when the val is not initialized
-		if(instruments[currentGridIndex] && currentGridIndex>-1) {
+		if(!instruments[currentGridIndex].out === null) {
 			$('#output').val('Channel '+instruments[currentGridIndex].out);
-		} else {
-			$('#output').val('Pick yr MIDI out!');
 		}
+		// else {
+		// 	console.log('we in this');
+		// 	$('#output').val('Pick a Channel!');
+		// }
 		$('.thumbs:eq('+currentGridIndex+')').addClass('selected');
 		$('.container').fadeIn(1000);
 		// scroll to the middle of the $grid
@@ -201,7 +200,6 @@ $(document).ready(function(){
 	// TODO: make it so that this does not effect step move
 	$(document).on("mouseleave",'.selected .grid',function(){
 		mouseIsClicked = false;
-		userLeft = true;
 		socket.emit('end grid events',{
 			roomID: roomID,
 			user: user,
@@ -841,9 +839,7 @@ function stepReturn(data){
 	var $stepthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb:eq("+data.column+")");
 
 	// check for interaction mode
-	if(data.mousemode === 1){
-		data.state = '';
-	}
+
 
 	// step interaction
 	switch(data.state) {
@@ -888,6 +884,7 @@ function stepReturn(data){
 			if (data.grab) {
 				var movingStep = instruments[data.inst].steps[data.grid][data.noteIx]
 				instruments[data.inst].removeNotes(movingStep);
+				instruments[data.inst].steps[data.grid][data.noteIx].clearBorder();
 			}
 			instruments[data.inst].steps[data.grid][data.noteIx].move(data);
 
@@ -898,7 +895,7 @@ function stepReturn(data){
 			if(data.release){
 				$('.step').removeClass('grabbing');
 				var setNote = instruments[data.inst].steps[data.grid][data.noteIx];
-
+				instruments[data.inst].steps[data.grid][data.noteIx].updateUser(data.user);
 				// check for overlapped steps in final step position
 				var overlappers = instruments[data.inst].steps[data.grid].filter(a =>
 					a.inRange(setNote.on,setNote.off) && (a.row === data.row));
@@ -919,16 +916,20 @@ function stepReturn(data){
 		case 'trim':
 			var currNote = instruments[data.inst].steps[data.grid][data.noteIx];
 			instruments[data.inst].removeNotes(currNote);
+			instruments[data.inst].steps[data.grid][data.noteIx].clearBorder();
 			if(data.trimLeft){
 				instruments[data.inst].steps[data.grid][data.noteIx].trimLeft(data.column,data)
 			}else if(data.trimRight){
 				instruments[data.inst].steps[data.grid][data.noteIx].trimRight(data.column,data);
 			}
 
+
 			if(data.delete){
 				deleteNote(data);
 			}else{
 				instruments[data.inst].getNotes(currNote);
+
+				instruments[data.inst].steps[data.grid][data.noteIx].updateUser(data.user);
 				resolveOverlaps(currNote,data);
 			}
 			break;
@@ -943,17 +944,10 @@ function stepReturn(data){
 			if(data.flipped){
 					$end = $start;
 					$start = $step;
-					if ($chord[0].length === $chord[1].length && data.mousemode === 2) {
-						$chord.reverse();
-						chordUpdate($chord, data);
-						$chord = [[],[]];
-					}
+
 			} else {
 				$end = $step;
-				if ($chord[0].length === $chord[1].length && data.mousemode === 2) {
-						chordUpdate($chord, data);
-						$chord = [[],[]];
-				}
+
 			}
 
 			// put created note into array of active notes
@@ -968,6 +962,7 @@ function stepReturn(data){
 
 				// create new note object instance
 				instruments[data.inst].steps[data.grid].push(new TBDnote($start.index(),$end.index(),data));
+
 				instruments[data.inst].getNotes(getLastStep(data));
 			}
 			break;
@@ -983,6 +978,9 @@ function TBDnote(startpos,endpos,data) {
 	this.grid = data.grid;
 	// row of note
 	this.row = data.row;
+	this.user = data.user;
+	var color = "blue";
+
 
 	// jQuery reference for starting and ending elements
 	this.$start = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+startpos+")");
@@ -1000,7 +998,30 @@ function TBDnote(startpos,endpos,data) {
 	this.$elsthumb.addClass('clicked');
 	this.$end.addClass('right');
 	this.$start.addClass('left');
+	this.$els.css('border-top', 'solid ' + color + ' 2px');
+	this.$els.css('border-bottom', 'solid ' + color + ' 2px');
+	this.$start.css('border-left', 'solid ' + color + ' 2px')
+	this.$end.css('border-right', 'solid ' + color + ' 2px')
 
+	this.updateUser = function(user){
+		// find associated color
+		this.user = user;
+		var color = "blue";
+		this.$els.css('border-top', 'solid ' + color + ' 2px');
+		this.$els.css('border-bottom', 'solid ' + color + ' 2px');
+		this.$start.css('border-left', 'solid ' + color + ' 2px')
+		this.$end.css('border-right', 'solid ' + color + ' 2px')
+	}
+
+
+
+	this.clearBorder = function(){
+		this.$els.css('border-top', '');
+		this.$els.css('border-bottom', '');
+		this.$start.css('border-left', '')
+		this.$end.css('border-right', '')
+
+	}
 	this.move = function(data) {
 		// clear styling for previous step location
 		this.$els.removeClass('left right clicked selected')
@@ -1039,6 +1060,12 @@ function TBDnote(startpos,endpos,data) {
 		var isWrapped = between(this.on,this.off,on) || between(this.on,this.off,off)
 		return isOverlapping || isWrapped;
 	}
+
+	// this.userLeft = function(user){
+	// 	if(this.user === user){
+	//
+	// 	}
+	// }
 
 	// update styling as note is moved
 	this.update = function() {
