@@ -145,9 +145,21 @@ $(document).ready(function(){
 
 	// get updated list of users after new member joins room
 	socket.on('update users', function(data){
+		// update user list
 		users = data.users;
-		// notify
-		notification(data.user, user, "new_user");
+
+		// update visual user list
+		$('#userList').html('<div class="ital_text">Users</div>');
+		for (var i = 0; i < users.length; i++) {
+			$('#userList').append('<div class="user" style="background: '+ data.user_colors[i] +'"><div class="user_text">' + users[i] + '</div></div>');
+		}
+
+		// determine notification for connection or disconnection
+		if (data.type == 'connect') {
+			notification(data.user, user, "new_user");
+		} else {
+			notification(data.user, user, "disconnect");
+		}
 	});
 
 	// get current grid state from server
@@ -804,12 +816,6 @@ function stepReturn(data){
 		case 'on':
 			$step.addClass('clicked');
 
-			// apply user specific styling if not initiated by this user
-			if (data.user != user) {
-				$step.css('border-top', 'solid ' + data.color + ' 1px');
-				$step.css('border-bottom', 'solid ' + data.color + ' 1px');
-			}
-
 			$start = $step;
 			if(data.mousemode == 2){
 				$chord[0].push($step);
@@ -822,14 +828,6 @@ function stepReturn(data){
 			$step.addClass('clicked left right');
 			$stepthumb.addClass('clicked');
 
-			// apply user specific styling if not initiated by this user
-			if (data.user != user) {
-				$step.css('border-top', 'solid ' + data.color + ' 1px');
-				$step.css('border-bottom', 'solid ' + data.color + ' 1px');
-				$step.css('border-left', 'solid ' + data.color + ' 1px');
-				$step.css('border-right', 'solid ' + data.color + ' 1px');
-			}
-
 			instruments[data.inst].steps[data.grid].push(new TBDnote($step.index(),$step.index(),data));
 			instruments[data.inst].getNotes(getLastStep(data));
 			if(data.mousemode === 2){
@@ -841,12 +839,6 @@ function stepReturn(data){
 		case 'sus':
 			$step.removeClass('left right');
 			$step.addClass('clicked');
-			// apply user specific styling if not initiated by this user
-			if (data.user != user) {
-				$step.css('border-top', 'solid ' + data.color + ' 1px');
-				$step.css('border-bottom', 'solid ' + data.color + ' 1px');
-				$step.css('border-right', 'solid black 1px');
-			}
 			$stepthumb.addClass('clicked');
 			break;
 
@@ -915,19 +907,9 @@ function stepReturn(data){
 				if ($start) {
 					$start.addClass('left clicked');
 					instruments[data.inst].update($start,data.grid);
-
-					// apply user specific styling if not initiated by this user
-					if (data.user != user) {
-						$start.css('border-left', 'solid ' + data.color + ' 1px');
-					}
 				}
 				if ($end) {
 					$end.addClass('right clicked');
-
-					// apply user specific styling if not initiated by this user
-					if (data.user != user) {
-						$step.css('border-right', 'solid ' + data.color + ' 1px');
-					}
 				}
 
 				// create new note object instance
@@ -1059,7 +1041,6 @@ function sendStep(state) {
 	socket.emit('step',{
 		row: row,
 		column: column,
-		color: '',
 		inst: currentGridIndex,
 		roomID: roomID,
 		mousemode: mousemode,
@@ -1217,6 +1198,9 @@ function notification(sender, user, type) {
 				break;
 			case "delete_inst":
 				notification = sender + " deleted an instrument."
+				break;
+			case "disconnect":
+				notification = sender + " left the room."
 				break;
 			case "new_user":
 				notification = sender + " joined the room."

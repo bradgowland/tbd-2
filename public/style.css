@@ -617,3 +617,34 @@ ul.tabs li.selected{
   height: 65%;
   margin: auto;
 }
+
+#userList{
+  border:solid 1px;
+  float: left;
+  width: 40%;
+  height: 300px;
+  margin: 10px;
+  text-align: left;
+}
+
+.user {
+  border-radius: 3px;
+  float: left;
+  height: 30px;
+  margin-left: 10px;
+  margin-top: 5px;
+  width: 50%;
+  position: relative;
+}
+
+.user_text {
+  text-align: center;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 50%;
+  height: 65%;
+  margin: auto;
+}
