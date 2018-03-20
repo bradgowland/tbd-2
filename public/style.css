@@ -621,3 +621,25 @@ ul.tabs li.selected{
   height: 50%;
   text-align: center;
 }
+
+.notif {
+  background: lightgrey;
+  border-radius: 3px;
+  float: right;
+  height: 30px;
+  margin-top: 5px;
+  width: 400px;
+  position: relative;
+  display: none;
+}
+
+.notif_text {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 50%;
+  height: 65%;
+  margin: auto;
+}
