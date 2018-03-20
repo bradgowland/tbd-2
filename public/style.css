@@ -142,15 +142,16 @@ input {
 .grid{
     height: inherit;
     width:100%;
-    cursor:url(images/pencil.png) 5 5,auto;
+    cursor:url(images/pencil.png) 8 8,auto;
 }
-.grid.eraser{
-  cursor:url(images/eraser.png) 5 5,auto;
 
+
+.grid.eraser{
+  cursor:url(images/eraser.png) 8 8,auto;
 }
 
 .grid.chord{
-  cursor:url(images/chord.png) 5 5,auto;
+  cursor:url(images/chord.png) 8 8,auto;
 }
 
 .newInstrument{
@@ -223,6 +224,10 @@ input {
 .bottomrow{
   margin: 5px;
   height:0px;
+}
+
+.grid.alted{
+  cursor: col-resize;
 }
 
 .grid.little{
@@ -362,24 +367,46 @@ input {
   cursor: -webkit-grab;       /* Likely future */
 }
 
+.step.clicked.left.alted{
+  cursor: col-resize;
+}
+
+.step.clicked.right.alted{
+  cursor: col-resize;
+}
+
+/* .step.clicked.left.right.highlighted{
+  cursor: -webkit-grab;
+}
+
+.step.clicked.left.right.grab{
+  cursor: -webkit-grab;
+} */
+
+.step.clicked.left.right.grabbing.selected{
+  cursor: -webkit-grabbing;
+}
+
 .step.clicked:hover{
   background-color: black;
 }
 
 .step.clicked.left{
   border-left: solid white 2px;
-  cursor: crosshair;
+
 }
 
 .step.clicked.right{
   border-right:solid white 2px;
-  cursor: crosshair;
+
 }
 
 .step.clicked.highlighted{
   border-top: solid red 2px;
   border-bottom:solid red 2px;
 }
+
+
 
 .step.selected{
   border-top: solid red 2px;
@@ -396,15 +423,14 @@ input {
 
 .step.clicked.left.highlighted{
   border-left: solid red 2px;
-  cursor: crosshair;
+
 }
 .step.clicked.right.highlighted{
   border-right:solid red 2px;
-  cursor: crosshair;
 }
 
 .step.current{
-  /*border: solid hotpink 4px; */
+
   background-color: red;
 }
 

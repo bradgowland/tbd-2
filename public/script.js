@@ -29,6 +29,9 @@ var passedStart;
 var columnChanged;
 var twoCellsBack;
 var lastCellLeft;
+var trimLeft, trimRight, trimSingle;
+
+var userLeft = false;
 
 // MIDI
 var midiOut;
@@ -46,7 +49,7 @@ var started;
 
 // Draw Loop
 var tempo;
-var stopcounter;
+var stopcounter=true;
 // Instruments
 var octave;
 
@@ -163,7 +166,7 @@ $(document).ready(function(){
 			}
 		}
 		$('#tempo').val(data.tempo);
-		frameRate(data.tempo/15);
+		// frameRate(data.tempo/15);
 
 		// get current list of Users
 		users = data.users;
@@ -191,6 +194,17 @@ $(document).ready(function(){
 	// TODO: make it so that this does not effect step move
 	$(document).on("mouseleave",'.selected .grid',function(){
 		mouseIsClicked = false;
+		userLeft = true;
+		socket.emit('end grid events',{
+			roomID: roomID,
+			user: user,
+			row: row,
+			column: column,
+			grid: currentThumb,
+			inst: currentGridIndex,
+			trimRight: trimRight,
+			trimLeft:trimLeft,
+		});
 	});
 
 
@@ -204,7 +218,10 @@ $(document).ready(function(){
 		twoCellsBack = -1;
 
 		// Flag for if client is moving a note
-		move = $(this).hasClass('clicked') ? true : false;
+		trimRight = alted && $(this).hasClass('right') && !$(this).hasClass('left');
+		trimLeft = alted && $(this).hasClass('left') && !$(this).hasClass('right');
+		trimSingle = alted && $(this).hasClass('left') && $(this).hasClass('right');
+		move = $(this).hasClass('clicked') && !alted ? true : false;
 		mouseIsClicked = true;
 
 		row = $(this).parent().index();
@@ -213,7 +230,7 @@ $(document).ready(function(){
 		// Audition notes on click
 		var rowNum = instruments[currentGridIndex].rows;
 		var note = instruments[currentGridIndex].type.midiNotes[rowNum-1-row]
-		if(instruments[currentGridIndex].out && midiOut && note && stopcounter && !clear){
+		if(instruments[currentGridIndex].out && midiOut && note){
 			midiOut.playNote(note,instruments[currentGridIndex].out);
 			midiOut.stopNote(note,instruments[currentGridIndex].out,{time: '+500'});
 		}
@@ -222,9 +239,12 @@ $(document).ready(function(){
 		start = column;
 
 		// set state to the proper mode
-		if(move) {
+
+		if (move) {
 			grabNote();
 			$('.grid .selected').addClass('grabbing')
+		} else if( trimRight || trimLeft || trimSingle) {
+			trimNote();
 		} else {
 			state = mousemode === 1 ? '' :  'on';
 			sendStep(state);
@@ -246,6 +266,7 @@ $(document).ready(function(){
 					state = clear || reversing ? '' : 'sus';
 					sendStep(state);
 				}
+
 			}
 		}).on("mouseenter", '.selected .row .step',function(){
 		if(mouseIsClicked){
@@ -257,7 +278,15 @@ $(document).ready(function(){
 				reversing = false;
 			}
 			column = $(this).index();
-
+			if(trimSingle){
+				if(column < start){
+					trimLeft = true;
+					console.log("You're extending left")
+				} else if (column > start) {
+					trimRight = true;
+					console.log("You're extending right")
+				}
+			}
 			if((column === twoCellsBack) && (!move)) {
 				reversing = reversing ? false : true;
 				//sets cell to off if user goes back from whence he came
@@ -276,22 +305,30 @@ $(document).ready(function(){
 			if(move) {
 				row = $(this).parent().index();
 				sendStep('move');
-			} else if(mousemode === 0 || mousemode === 2) {
+			} else if (trimLeft || trimRight || trimSingle){
+				trimNote();
+			}else if(mousemode === 0 || mousemode === 2) {
 				column = $(this).index();
 				state = clear || reversing ? '' : 'sus';
 				sendStep('sus');
 			}
 		}
 	}).on("mouseup",'.row .step',function() {
+		if(mouseIsClicked){
 		mouseIsClicked = false;
 		column = $(this).index();
 
-		if(!shifted){
-			move ? releaseNote() : sendStep('off');
+		if(!shifted && move){
+			releaseNote();
+		}else if(trimLeft || trimRight || trimSingle){
+			setTrim();
+		}else{
+			sendStep('off');
 		}
 
 		reversing = false;
 		clear = false;
+	}
 	});
 
 	// update steps from all users
@@ -302,7 +339,7 @@ $(document).ready(function(){
 	$(document).on("mouseover",".step.clicked",function(){
 		var $step = $(this);
 		var thisCol = $step.index();
-		// Searches for the note you're hovering over
+//		Searches for the note you're hovering over
 		var highlight= instruments[currentGridIndex].steps[currentThumb].findIndex(function(el){
 			return (el.row === $step.parent().index()) && (el.on <= thisCol) && (el.off >= thisCol)
 		});
@@ -387,14 +424,27 @@ $(document).ready(function(){
 		alted = e.altKey;
 	});
 
+
+
 	// distribute step delete to server
 	$(document).on('keydown', function(e){
 		if(e.keyCode === 8 && currentGridIndex > -1){
 			if(instruments[currentGridIndex].steps[currentThumb].length){
 				sendDelete();
 			}
+		} else if (e.altKey){
+			console.log("alt in progress")
+			$('.step.clicked.left').addClass('alted');
+			$('.step.clicked.right').addClass('alted');
+		}
+
+	}).on('keyup', function(e){
+		if (e.which === 18) {
+			$('.step').removeClass('alted');
 		}
 	});
+
+
 	// receive step delete msg from server
 	socket.on('delete step return',function(data){
 		deleteNote(data);
@@ -472,7 +522,7 @@ $(document).ready(function(){
 		}
 
 		// make instrument with specified number of notes
-		var rowCount = $("#rowCount").val();
+		var rowCount = 60
 		if(rowCount > 128){
 			rowCount = 128;
 		} else if (rowCount < 1){
@@ -734,13 +784,15 @@ function draw() {
 
 	// highlight next column for ticker
 	if (!stopcounter) {
-		var allRows = $('.step:eq('+counter+')', '.row').toggleClass('current');
+		var allRows = $('.step:eq('+counter+')', '.row').addClass('current');
 	} else {
 		// error case if MIDI output is not configured
 		midiOut ? midiOut.stopNote('all'): console.error("You haven't set the MIDI out!");
+		$('.step').removeClass('current');
 	}
 }
 
+$('.step').removeClass('current');
 // message submit and tag search fn def
 function messageSubmit() {
 	// username
@@ -817,6 +869,10 @@ function stepReturn(data){
 		case 'move':
 			// get offset of click location from note on
 			data.column -= data.offset;
+			if (data.grab) {
+				var movingStep = instruments[data.inst].steps[data.grid][data.noteIx]
+				instruments[data.inst].removeNotes(movingStep);
+			}
 			instruments[data.inst].steps[data.grid][data.noteIx].move(data);
 
 			// refresh jQuery to reflect instrument state on server
@@ -826,10 +882,6 @@ function stepReturn(data){
 			if(data.release){
 				$('.step').removeClass('grabbing');
 				var setNote = instruments[data.inst].steps[data.grid][data.noteIx];
-
-				// check for neighbors on new complete note
-				var neighbors = instruments[data.inst].steps[data.grid].filter(
-					a => a.row === data.row);
 
 				// check for overlapped steps in final step position
 				var overlappers = instruments[data.inst].steps[data.grid].filter(a =>
@@ -846,6 +898,22 @@ function stepReturn(data){
 				// update new changes visually
 				instruments[data.inst].refreshSteps(data.grid);
 				instruments[data.inst].getNotes(setNote);
+			}
+			break;
+		case 'trim':
+			var currNote = instruments[data.inst].steps[data.grid][data.noteIx];
+			instruments[data.inst].removeNotes(currNote);
+			if(data.trimLeft){
+				instruments[data.inst].steps[data.grid][data.noteIx].trimLeft(data.column,data)
+			}else if(data.trimRight){
+				instruments[data.inst].steps[data.grid][data.noteIx].trimRight(data.column,data);
+			}
+
+			if(data.delete){
+				deleteNote(data);
+			}else{
+				instruments[data.inst].getNotes(currNote);
+				resolveOverlaps(currNote,data);
 			}
 			break;
 
@@ -977,7 +1045,8 @@ function TBDnote(startpos,endpos,data) {
 
 	// trim note at note on - left grid boundary
 	this.trimLeft = function(newOn, data) {
-		this.$start.removeClass('left');
+		this.$els.removeClass('clicked left highlighted selected')
+		this.$elsthumb.removeClass('clicked');
 		this.on = newOn;
 		this.len = this.off - this.on;
 
@@ -985,14 +1054,15 @@ function TBDnote(startpos,endpos,data) {
 		this.$start = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+this.on+")");
 		this.$els = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step").slice(this.on,this.off+1);
 		this.$elsthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb").slice(this.on,this.off+1);
-		this.$els.addClass('clicked');
+		this.$els.addClass('clicked selected');
 		this.$start.addClass('left');
 		this.$elsthumb.addClass('clicked');
 	}
 
 	// trim note at note off - right grid boundary
 	this.trimRight = function(newOff, data) {
-		this.$end.removeClass('right');
+		this.$els.removeClass('clicked right highlighted selected')
+		this.$elsthumb.removeClass('clicked');
 		this.off = newOff;
 		this.len = this.off - this.on;
 
@@ -1000,7 +1070,7 @@ function TBDnote(startpos,endpos,data) {
 		this.$end = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+(this.off)+")");
 		this.$els = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step").slice(this.on,this.off+1);
 		this.$elsthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb").slice(this.on,this.off+1);
-		this.$els.addClass('clicked');
+		this.$els.addClass('clicked selected');
 		this.$end.addClass('right');
 		this.$elsthumb.addClass('clicked');
 	}
@@ -1051,6 +1121,39 @@ function releaseNote() {
 		grid: currentThumb,
 		release: true,
 	});
+}
+
+function trimNote(){
+	socket.emit('step',{
+		row: row,
+		column: column,
+		inst: currentGridIndex,
+		roomID: roomID,
+		mousemode: mousemode,
+		user: user,
+		shifted: shifted,
+		state: 'trim',
+		grid: currentThumb,
+		trimLeft: trimLeft,
+		trimRight: trimRight,
+	});
+}
+
+function setTrim(){
+	socket.emit('step',{
+			row: row,
+			column: column,
+			inst: currentGridIndex,
+			roomID: roomID,
+			mousemode: mousemode,
+			user: user,
+			shifted: shifted,
+			state: 'trim',
+			grid: currentThumb,
+			trimLeft: trimLeft,
+			trimRight: trimRight,
+			release:true,
+	})
 }
 
 // distribute deleted step message
@@ -1126,23 +1229,51 @@ function correctOverlaps(overlaps, overlapCase, moved, data) {
 
 		// apply overlap types
 		switch (overlapCase[i]) {
+			//Working properly
 			case 'covered':
 				data.noteIx = currIx;
 				deleteNote(data);
 				break;
 
+				//Working properly
 			case 'wrapping':
 				instruments[data.inst].steps[data.grid].push(new TBDnote(moved.off+1,overlaps[i].off,data));
+				instruments[data.inst].getNotes(getLastStep(data));
 				instruments[data.inst].steps[data.grid][currIx].trimRight(moved.on-1,data);
 				break;
+
 
 			case 'onleft':
+				var currNote = instruments[data.inst].steps[data.grid][currIx]
+				instruments[data.inst].removeNotes(currNote);
 				instruments[data.inst].steps[data.grid][currIx].trimRight(moved.on-1,data);
+				instruments[data.inst].getNotes(currNote);
 				break;
 
+
 			case 'onright':
+				var currNote = instruments[data.inst].steps[data.grid][currIx]
+				instruments[data.inst].removeNotes(currNote);
 				instruments[data.inst].steps[data.grid][currIx].trimLeft(moved.off+1,data);
+				instruments[data.inst].getNotes(currNote);
 				break;
 		}
 	}
+}
+
+function resolveOverlaps(currentStep, data){
+	var overlappers = instruments[data.inst].steps[data.grid].filter(a =>
+		a.inRange(currentStep.on,currentStep.off) && (a.row === data.row));
+
+	// remove reference to the note that we're checking against
+	overlappers.splice(overlappers.indexOf(currentStep),1);
+
+	// cases for different overlap situations
+	var overlapTypes = [];
+	overlappers.forEach(a => overlapTypes.push(overlapType(currentStep, a)))
+	correctOverlaps(overlappers, overlapTypes, currentStep,data);
+
+	// update new changes visually
+	instruments[data.inst].refreshSteps(data.grid);
+	instruments[data.inst].getNotes(currentStep);
 }

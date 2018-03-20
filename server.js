@@ -8,6 +8,8 @@ const MongoClient = require('mongodb').MongoClient;
 const uri = 'mongodb://heroku_wzrt98pf:o60ajjk1lrsa5d23ohlf7auoes@ds117888.mlab.com:17888/heroku_wzrt98pf';
 const dbName = 'heroku_wzrt98pf';
 
+
+var chordInversions = [[0,2,4],[-5,-3,0],[-3,0,2]]
 // allocate mem for instruments
 var instrumentArray = [];
 // session objects
@@ -23,6 +25,7 @@ var start = [];
 var selectedStep,clickOffset;
 var selectedSteps = [];
 var userThatClicked = [];
+var trims = [];
 
 app.use(express.static('public'));
 
@@ -273,65 +276,105 @@ io.on('connection', function(socket){
       }
     }
 
-    // TODO: update with chord changes
-    // chord step interaction
-    if (data.mousemode === 2) {
-      for (i=0;i<3;i++) {
-        if (data.row >= 0) {
-          if (data.flipped) {
-            sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = 'on';
-          } else {
-          sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column].state = data.state;
-          }
+    if (data.state === 'trim'){
 
-          if (data.onleft && i) {
-            var left = sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state;
-            switch (left) {
-              case 'sus':
-                sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state = 'off';
-                break;
-              case 'on':
-                sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column-1].state = 'onoff';
-                break;
-            }
-          }
+      if (trims.some(a => a.user === data.user)){
+        var ix = trims.findIndex(a => a.user === data.user);
+        if(ix != -1){
+          data.noteIx = trims[ix].noteIx;
+        }
+      }else{
+        var trimStep = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].findIndex(function(el){
+          return (el.row === data.row) && (el.on <= data.column) && (el.off >= data.column)
+        });
+        trims.push({
+          user: data.user,
+          noteIx: trimStep,
+        });
+        data.noteIx = trimStep;
 
-          if (data.onright && i) {
-            var right = sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state;
-            switch (right) {
-              case 'sus':
-                sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'on';
-                data.onright = true;
-                break;
-              case 'off':
-                sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'onoff';
-                break;
-              case 'onoff':
-                sessions[getIx(data.roomID)].instruments[data.inst].grid[data.grid][data.row][data.column+1].state = 'onoff';
-                break;
-            }
+      }
 
-          }
-          io.to(data.roomID).emit('stepreturn', data);
-          data.row -= 2;
+
+      if(data.trimLeft){
+        sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][data.noteIx].trimLeft(data.column);
+      }else if(data.trimRight){
+        sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][data.noteIx].trimRight(data.column);
+      }
+
+
+      if(data.release){
+        trims.splice(trims.findIndex(a=>a.user===data.user),1);
+        var trimmedStep = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][data.noteIx]
+
+        // Delete note if it is fully trimmed away
+        if(trimmedStep.on > trimmedStep.off){
+
+          console.log('Step ', data.noteIx, ' should be deleted!')
+          data.delete = true;
+          sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].splice(data.noteIx,1);
+        }else{
+          resolveOverlaps(trimmedStep,data);
         }
       }
-      createLog(data.roomID, new Date(), "step chord", data.user);
-
-      // set to clear if erasing
-    } else if (data.mousemode === 1) {
-      data.state = '';
-      io.to(data.roomID).emit('stepreturn', data);
-      createLog(data.roomID, new Date(), "step erased", data.user);
-
-      // sets to 'onoff' when holding shift
-    } else {
-      if(data.shifted){
-        data.state = 'onoff';
-      }
-      io.to(data.roomID).emit('stepreturn', data);
     }
+
+    // TODO: update with chord changes
+    // chord step interaction
+
+  if(data.shifted){
+    data.state = 'onoff';
+  }
+  io.to(data.roomID).emit('stepreturn', data);
+
   });
+
+  socket.on('end grid events',function(data){
+    var check = [];
+    check.push(trims.findIndex(a => a.user === data.user));
+    check.push(selectedSteps.findIndex(a => a.user === data.user));
+    check.push(userThatClicked.indexOf(data.user));
+    var clearCase = check.findIndex(a=>a>-1);
+    switch(clearCase){
+
+      case 0:
+        data.state = 'trim';
+        data.noteIx = trims[check[0]].noteIx;
+        data.release = true;
+        if(data.trimLeft){
+          sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][data.noteIx].trimLeft(data.column);
+        }else if(data.trimRight){
+          sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][data.noteIx].trimRight(data.column);
+        }
+        var trimmedStep = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][data.noteIx]
+        resolveOverlaps(trimmedStep,data);
+        trims.splice(check[0],1);
+      break;
+      case 1:
+        data.state = 'move';
+        data.noteIx = selectedSteps[check[1]].noteIx;
+        data.offset = selectedSteps[check[1]].offset;
+        data.release = true;
+        sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][data.noteIx].move(data);
+        var moveStep = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][data.noteIx]
+        resolveOverlaps(moveStep,data);
+        selectedSteps.splice(check[1],1);
+      break;
+      case 2:
+        data.state = 'off';
+        if (data.column === start[check[2]]) {
+          data.state = 'onoff';
+        } else {
+          data.flipped = data.column < start[check[2]] ? true : false;
+        }
+        sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].push(new TBDnote(start[check[2]],data.column,data));
+        userThatClicked.splice(check[2],1);
+        start.splice(check[2],1);
+      break;
+    }
+
+    io.to(data.roomID).emit('stepreturn', data);
+  })
 
   // distribute delete setp msg
   socket.on('delete step',function(data){
@@ -666,4 +709,17 @@ String.prototype.hashCode = function() {
         hash = hash & hash;
     }
     return hash;
+}
+
+function resolveOverlaps(currentNote,data){
+  var overlappers = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].filter(
+    a => a.row === data.row && a.inRange(currentNote.on,currentNote.off));
+
+  //remove reference to the note that we're checking against
+  overlappers.splice(overlappers.indexOf(currentNote),1);
+
+  // check overlap situation and visually correct
+  var overlapTypes = [];
+  overlappers.forEach(a => overlapTypes.push(overlapType(currentNote,a)))
+  correctOverlaps(overlappers,overlapTypes, currentNote,data);
 }

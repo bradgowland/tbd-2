@@ -92,6 +92,7 @@ function TBDgrid(name, rows, cols,type, root, outChan){
 	// take index from step and add to note array
 	this.getNotes = function(thing) {
 			var midiVal = this.type.midiNotes[this.rows - 1 - thing.row];
+
 			var onIndex = this.notes.on[thing.grid][thing.on].indexOf(midiVal);
 			// check to prevent duplicates in the note on array
 			onIndex === -1 ? this.notes.on[thing.grid][thing.on].push(midiVal) : console.log('Midi value ', midiVal, 'already here');
@@ -203,6 +204,11 @@ function TBDgrid(name, rows, cols,type, root, outChan){
 	lilGrid.find(".step").css({
 		"width": (Math.floor(w))+"%",
 	});
+
+	lilGrid.find(".row").css({
+		"height": 100/this.rows+"%"
+	});
+
 
 	// append thumbs to associated instrument
 	lilGrid.find(".step").addClass('stepthumb');
