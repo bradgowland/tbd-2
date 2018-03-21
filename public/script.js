@@ -11,6 +11,7 @@ var currentGridIndex = 0;
 var roomID = -1;
 var user = "";
 var users = [];
+var user_colors = [];
 var refreshHistory = 1;
 var mousemode = 0;
 var counter = 0;
@@ -148,11 +149,12 @@ $(document).ready(function(){
 	socket.on('update users', function(data){
 		// update user list
 		users = data.users;
+		user_colors = data.user_colors;
 
 		// update visual user list
 		$('#userList').html('<div class="ital_text">Users</div>');
 		for (var i = 0; i < users.length; i++) {
-			$('#userList').append('<div class="user" style="background: '+ data.user_colors[i] +'"><div class="user_text">' + users[i] + '</div></div>');
+			$('#userList').append('<div class="user" style="background: '+ user_colors[i] +'"><div class="user_text">' + users[i] + '</div></div>');
 		}
 
 		// determine notification for connection or disconnection
@@ -993,9 +995,9 @@ function TBDnote(startpos,endpos,data) {
 	this.grid = data.grid;
 	// row of note
 	this.row = data.row;
+	// capture user and color
 	this.user = data.user;
-	var color = "blue";
-
+	this.color = user_colors[users.indexOf(data.user)];
 
 	// jQuery reference for starting and ending elements
 	this.$start = $(".gridContainer:eq("+data.inst+") .grid:eq("+data.grid+") .row:eq("+data.row+") .step:eq("+startpos+")");
@@ -1013,30 +1015,28 @@ function TBDnote(startpos,endpos,data) {
 	this.$elsthumb.addClass('clicked');
 	this.$end.addClass('right');
 	this.$start.addClass('left');
-	this.$els.css('border-top', 'solid ' + color + ' 2px');
-	this.$els.css('border-bottom', 'solid ' + color + ' 2px');
-	this.$start.css('border-left', 'solid ' + color + ' 2px')
-	this.$end.css('border-right', 'solid ' + color + ' 2px')
+	this.$els.css('border-top', 'solid ' + this.color + ' 2px');
+	this.$els.css('border-bottom', 'solid ' + this.color + ' 2px');
+	this.$start.css('border-left', 'solid ' + this.color + ' 2px')
+	this.$end.css('border-right', 'solid ' + this.color + ' 2px')
 
 	this.updateUser = function(user){
 		// find associated color
 		this.user = user;
-		var color = "blue";
-		this.$els.css('border-top', 'solid ' + color + ' 2px');
-		this.$els.css('border-bottom', 'solid ' + color + ' 2px');
-		this.$start.css('border-left', 'solid ' + color + ' 2px')
-		this.$end.css('border-right', 'solid ' + color + ' 2px')
+		this.color = user_colors[users.indexOf(user)];
+		this.$els.css('border-top', 'solid ' + this.color + ' 2px');
+		this.$els.css('border-bottom', 'solid ' + this.color + ' 2px');
+		this.$start.css('border-left', 'solid ' + this.color + ' 2px')
+		this.$end.css('border-right', 'solid ' + this.color + ' 2px')
 	}
-
-
 
 	this.clearBorder = function(){
 		this.$els.css('border-top', '');
 		this.$els.css('border-bottom', '');
 		this.$start.css('border-left', '')
 		this.$end.css('border-right', '')
-
 	}
+
 	this.move = function(data) {
 		// clear styling for previous step location
 		this.$els.removeClass('left right clicked selected')
@@ -1229,25 +1229,8 @@ function sendDelete() {
 function deleteNote(data) {
 	instruments[data.inst].removeNotes(instruments[data.inst].steps[data.grid][data.noteIx]);
 	instruments[data.inst].steps[data.grid][data.noteIx].delete();
+	instruments[data.inst].steps[data.grid][data.noteIx].clearBorder();
 	instruments[data.inst].steps[data.grid].splice(data.noteIx, 1);
-}
-
-// TODO: update chord stuff for new step obj
-function chordUpdate($chord, data) {
-	$chord[0].forEach(function(element){
-		element.removeClass('right');
-		element.addClass('left clicked')
-	})
-
-	$chord[1].forEach(function(element){
-		element.removeClass('left');
-		element.addClass('right clicked');
-	})
-
-	for(var i = 0; i < $chord[0].length;i++){
-		instruments[data.inst].update($chord[0][i],data.grid);
-		instruments[data.inst].update($chord[1][i],data.grid);
-	}
 }
 
 // retrieve last step in array to select newly created note

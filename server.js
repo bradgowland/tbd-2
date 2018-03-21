@@ -618,9 +618,9 @@ function correctOverlaps(overlaps, overlapCase, moved, data) {
 function session(roomID, socket){
   this.roomID = roomID;
   this.users = [];
-  this.user_colors = ['chartreuse', 'orchid', 'yellow', 'cyan', 'green', 'aqua', 'pink',
-        'purple', 'light-green', 'deep-purple', 'indigo', 'blue', 'sand', 'teal',
-        'khaki', 'light-blue', 'red'];
+  this.user_colors = ['chartreuse', 'orchid', 'yellow', 'orangered', 'green', 'red', 'aqua',
+        'pink', 'purple', 'orange', 'lightgreen', 'slategray', 'indigo', 'navy', 'maroon',
+        'teal', 'moccasin'];
   this.instruments = [];
   this.tempo = 120;
   this.created = 0;
