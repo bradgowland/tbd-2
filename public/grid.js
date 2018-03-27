@@ -95,7 +95,7 @@ function TBDgrid(name, rows, cols,type, root, outChan){
 
 			var onIndex = this.notes.on[thing.grid][thing.on].indexOf(midiVal);
 			// check to prevent duplicates in the note on array
-			onIndex === -1 ? this.notes.on[thing.grid][thing.on].push(midiVal) : console.log('Midi value ', midiVal, 'already here');
+			onIndex === -1 ? this.notes.on[thing.grid][thing.on].push(midiVal) : console.log('');
 			this.notes.off[thing.grid][(thing.off+1)%32].push(midiVal);
 	}
 
@@ -116,6 +116,7 @@ function TBDgrid(name, rows, cols,type, root, outChan){
 			this.notes.on[ix].push([]);
 			this.notes.off[ix].push([]);
 		}
+		this.steps[ix].forEach(a => a.clearBorder());
 		this.steps[ix].forEach(a => a.delete());
 		this.steps[ix] = [];
 	}

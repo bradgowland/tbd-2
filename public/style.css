@@ -1,7 +1,8 @@
 body {
     padding: 20px;
     margin: 10px;
-    background: linear-gradient(90deg, aqua, hotpink);
+
+     background: linear-gradient(90deg, aqua, hotpink); */
 }
 
 #midi{
@@ -39,6 +40,8 @@ body {
     letter-spacing: 10px;
     text-shadow: 3px 2px black;
 }
+
+
 
 .intro_text {
   color: white;
@@ -267,6 +270,10 @@ input {
   display:inherit;
 }
 
+.thumbtext{
+  margin-top: 10px;
+}
+
 
 
 .gridlabels{
@@ -287,6 +294,11 @@ input {
   text-align: center;
   line-height: 100%;
   overflow: visible;
+}
+
+.gridlabels:hover{
+  text-shadow: 1px 1px blue;
+
 }
 
 .messages {
@@ -321,7 +333,7 @@ input {
 }
 
 .step.quarter{
-  background-color:rgba(230, 204, 255, 0.4);
+  background-color:rgba(150, 200, 255, 0.2);
 }
 
 .rowlabel{
@@ -391,6 +403,10 @@ input {
   background-color: black;
 }
 
+.step.clicked.selected:hover{
+  background-color: grey;
+}
+
 .step.clicked.left{
   border-left: solid white 2px;
 
@@ -411,14 +427,20 @@ input {
 .step.selected{
   border-top: solid gray 2px;
   border-bottom:solid gray 2px;
+  border-left-style: none;
+  border-right-style: none;
+  background-color: grey;
+  transition: 0.3s;
 }
 
 .step.selected.left{
   border-left: solid gray 2px;
+  border-right-style: none;
 }
 
 .step.selected.right{
   border-right: solid gray 2px;
+  border-left-style: none;
 }
 
 .step.clicked.left.highlighted{
@@ -519,7 +541,7 @@ input {
 }
 
 .tab-link.selected{
-  background-color: hotpink;
+  background-color: darkgrey;
   border-top-left-radius: 25%;
   border-top-right-radius: 25%;
   border-bottom-left-radius: 0%;
@@ -527,6 +549,7 @@ input {
   border: solid 1px white;
   padding: 6px;
   color:blue;
+  transition:0.2s;
 }
 
 .tab-link{
@@ -599,6 +622,19 @@ ul.tabs li.selected{
   background-color:red;
 }
 
+#startstop:hover{
+  text-shadow: 2px 2px red;
+}
+
+#tempo:hover{
+  text-shadow: 2px 2px red;
+}
+
+#clearcurrent:hover{
+  color: grey;
+  transition: 1s;
+}
+
 .modal-header{
   text-shadow: 1px 1px skyblue;
   background-color: black;
@@ -651,10 +687,26 @@ ul.tabs li.selected{
 #userList{
   border:solid 1px;
   float: left;
-  width: 40%;
+  width: 30%;
   height: 300px;
   margin: 10px;
   text-align: left;
+}
+
+.controls{
+  border:solid 1px;
+  float: right;
+  width: 20%;
+  height: 300px;
+  margin: 10px;
+  text-align: left;
+  line-height: auto;
+}
+
+.howto{
+font-size: large;
+text-align: -webkit-auto;
+padding: 10px;
 }
 
 .user {

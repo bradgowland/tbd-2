@@ -93,16 +93,16 @@
 				  		Add another instrument! <br />
 						</div>
 
-							<p>What is the name?
+							<p>Name the instrument:
 							<input type="text" id="insName" pattern="[A-Za-z]{20}"> <br /></p>
 							<p>
 							<select id='presets'>
-								<option>Try a preset</option>
+								<option>Choose instrument type:</option>
+								<option>Chromatic</option>
 								<option>Drums</option>
-								<option style="background-color:red;">Major Scale</option>
+								<option>Major Scale</option>
 								<option>Minor Scale</option>
 								<option>Blues Scale</option>
-								<option>Chromatic</option>
 								<option>Harmonic Minor</option>
 								</select>
 							</p>
@@ -114,9 +114,9 @@
                 </p> -->
 								<select id='octave'>
 									<option>Pick a range:</option>
-									<option>Low</option>
-									<option>Mid</option>
-									<option>Hi</option>
+									<option>Low (A0-A4)</option>
+									<option>Mid (A2-A6)</option>
+									<option>Hi (A4-A8)</option>
 									</select>
 								</p>
               </div>
@@ -156,10 +156,13 @@
 					<option>G maj / e min</option>
 					<option>G# maj / e# min</option>
 				</select> -->
-				<div>
+				<div class='thumbtext'>
+					Toggle between different patterns by clickin' these grids
+					</div>
 					<div class="toprow"></div>
+
 					<div class="bottomrow"></div>
-				</div>
+
 				<div id="chatWidnow">
 				  <div id="title_bar">
 			    	<div id="chatRoom"></div>
@@ -174,6 +177,15 @@
 				</div>
 				<div id="userList">
 					<div class="ital_text">Users</div>
+				</div>
+				<div class="controls">
+					<div class="ital_text">Controls</div>
+					<div class='howto'>
+						<p><b>Click + Drag</b></br>
+						Create Note</p>
+						<p><b>Alt + Click</b></br>Trim/Extend Note</p>
+						<p><b>Shift + Click</b></br>Create Single Notes</p>
+					</div>
 				</div>
 			</div>
 		</div>

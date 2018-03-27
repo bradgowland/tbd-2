@@ -55,4 +55,4 @@ var harmonicMinorScale = {
 	minor: 1
 }
 
-var presets = [drums,majorScale,minorScale,bluesScale,fullGrid,harmonicMinorScale];
+var presets = [fullGrid,drums,majorScale,minorScale,bluesScale,harmonicMinorScale];
