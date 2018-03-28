@@ -272,7 +272,7 @@ $(document).ready(function(){
 		// Audition notes on click
 		var rowNum = instruments[currentGridIndex].rows;
 		var note = instruments[currentGridIndex].type.midiNotes[rowNum-1-row]
-		if(instruments[currentGridIndex].out && midiOut && note){
+		if(instruments[currentGridIndex].out && midiOut && note && stopcounter){
 			midiOut.playNote(note,instruments[currentGridIndex].out);
 			midiOut.stopNote(note,instruments[currentGridIndex].out,{time: '+500'});
 		}
@@ -302,7 +302,7 @@ $(document).ready(function(){
 					twoCellsBack = lastCellLeft;
 				}
 				column = $(this).index();
-				passedStart = reversing && (column === start) ? true:false;
+				passedStart = passedStart || reversing && (column === start) ? true:false;
 				if(columnChanged) {
 					lastCellLeft=column;
 				}
@@ -349,7 +349,7 @@ $(document).ready(function(){
 				sendStep('move');
 			} else if (trim){
 				trimNote();
-			}	else if (singles && column && !passedStart && !reversing) {
+			}	else if (singles && columnChanged && !passedStart && !reversing) {
 				sendStep('onoff');
 			}else if(mousemode === 0 || mousemode === 2) {
 				column = $(this).index();
@@ -384,18 +384,7 @@ $(document).ready(function(){
 		stepReturn(data);
 	});
 	// Set up allow for the highlighting and selecting of steps
-	$(document).on("mouseover",".step.clicked",function(){
-		var $step = $(this);
-		var thisCol = $step.index();
-//		Searches for the note you're hovering over
-		var highlight= instruments[currentGridIndex].steps[currentThumb].findIndex(function(el){
-			return (el.row === $step.parent().index()) && (el.on <= thisCol) && (el.off >= thisCol)
-		});
-		if(highlight > -1){
-			instruments[currentGridIndex].steps[currentThumb][highlight].$els.addClass('highlighted');
-		}
-
-	}).on("mousedown",".clicked",function(){
+	$(document).on("mousedown",".clicked",function(){
 			var $step = $(this);
 			var thisCol = $step.index();
 			if(currentGridIndex > -1){
@@ -405,16 +394,17 @@ $(document).ready(function(){
 			}
 			$('.selected .row .step').removeClass('selected');
 
-	}).on("mouseleave", ".clicked",function(){
-			var $step = $(this);
-			var thisCol = $step.index();
-			var highlight = instruments[currentGridIndex].steps[currentThumb].findIndex(function(el){
-				return (el.row === $step.parent().index()) && (el.on <= thisCol) && (el.off >= thisCol)
-			});
-			if(highlight > -1){
-				instruments[currentGridIndex].steps[currentThumb][highlight].$els.removeClass('highlighted');
-			}
 	});
+	// .on("mouseleave", ".clicked",function(){
+	// 		var $step = $(this);
+	// 		var thisCol = $step.index();
+	// 		var highlight = instruments[currentGridIndex].steps[currentThumb].findIndex(function(el){
+	// 			return (el.row === $step.parent().index()) && (el.on <= thisCol) && (el.off >= thisCol)
+	// 		});
+	// 		if(highlight > -1){
+	// 			instruments[currentGridIndex].steps[currentThumb][highlight].$els.removeClass('highlighted');
+	// 		}
+	// });
 
 	// The tab toggler
 	$(document).on("click","ul.tabs li a",function(){
@@ -546,7 +536,7 @@ $(document).ready(function(){
 	// create new instance from user menu specs
 	$(".newInsButton").click(function(){
 		var instName = $("#insName").val();
-
+		instName = instName === '' ? 'Instrument' : instName;
 		var duplicates = true;
 		var numToAppend = 1;
 		var names = instruments.map(a => a.name);
@@ -876,8 +866,7 @@ function stepReturn(data){
 	var $stepthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb:eq("+data.column+")");
 
 	// check for interaction mode
-
-
+ 	// console.log(data.state);
 	// step interaction
 	switch(data.state) {
 		// clear a note
@@ -903,6 +892,10 @@ function stepReturn(data){
 			$step.addClass('clicked left right');
 			$stepthumb.addClass('clicked');
 			instruments[data.inst].steps[data.grid].push(new TBDnote($step.index(),$step.index(),data));
+			resolveOverlaps(getLastStep(data),data);
+			var tog = getLastStep(data);
+			tog.updateUser(data.user);
+			instruments[data.inst].refreshSteps(data.grid);
 			instruments[data.inst].getNotes(getLastStep(data));
 			break;
 
@@ -942,7 +935,7 @@ function stepReturn(data){
 				resolveOverlaps(setNote,data);
 				// update new changes visually
 				instruments[data.inst].refreshSteps(data.grid);
-				instruments[data.inst].steps[data.grid][data.noteIx].updateUser(data.user);
+
 				instruments[data.inst].getNotes(setNote);
 			}
 			break;
@@ -959,43 +952,32 @@ function stepReturn(data){
 				deleteNote(data);
 			}else{
 				instruments[data.inst].getNotes(currNote);
-				resolveOverlaps(currNote,data);
-				instruments[data.inst].steps[data.grid][data.noteIx].updateUser(data.user);
+				if(data.release){resolveOverlaps(currNote,data);}
+				instruments[data.inst].refreshSteps(data.grid);
 			}
 			break;
 
 		// note is finalized on mouseup
 		case 'off':
 			// TODO: update chord interaction for new step object
-			if(data.mousemode == 2){
-				$chord[1].push($step);
-			}
-			// check for drag direction (L->R, R->L)
-			if(data.flipped){
-					$end = $start;
-					$start = $step;
 
-			} else {
-				$end = $step;
-
-			}
-
+			// console.log(data);
 			// put created note into array of active notes
-			if (data.mousemode != 2) {
-				if ($start) {
-					$start.addClass('left clicked');
-					instruments[data.inst].update($start,data.grid);
-				}
-				if ($end) {
-					$end.addClass('right clicked');
-				}
+			// if (data.mousemode != 2) {
+			// 	if ($start) {
+			// 		$start.addClass('left clicked');
+			// 		instruments[data.inst].update($start,data.grid);
+			// 	}
+				// if ($end) {
+				// 	$end.addClass('right clicked');
+				// }
 
 				// create new note object instance
-				instruments[data.inst].steps[data.grid].push(new TBDnote($start.index(),$end.index(),data));
+				instruments[data.inst].steps[data.grid].push(new TBDnote(data.start,data.end,data));
 
 				instruments[data.inst].getNotes(getLastStep(data));
 				resolveOverlaps(getLastStep(data),data);
-			}
+
 			break;
 	}
 }
