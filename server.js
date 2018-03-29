@@ -206,8 +206,9 @@ io.on('connection', function(socket){
 
     // find room, add user
     roomIndex = rooms.indexOf(roomID);
-    sessions[roomIndex].users.push(user);
-    createLog(roomID, new Date(), "user added to room", user);
+    if(sessions[roomIndex] !== undefined){
+      sessions[roomIndex].users.push(user);
+      createLog(roomID, new Date(), "user added to room", user);
 
     // send full user list to all users in rooms
     io.to(data.roomID).emit('update users', {
@@ -216,9 +217,12 @@ io.on('connection', function(socket){
       users: sessions[roomIndex].users,
       user_colors: sessions[roomIndex].user_colors,
     });
-
     // console check
-    console.log("Users in ", roomID, ": ", sessions[roomIndex].users);
+    //console.log("Users in ", roomID, ": ", sessions[roomIndex].users);
+  } else {
+    io.to(data.roomID).emit('refresh alert');
+  }
+
   });
 
   // distribute user step changes
@@ -273,8 +277,11 @@ io.on('connection', function(socket){
         data.start = start[offix];
         data.end = data.column;
       }
-
+      // TODO: Catch this constantly occurring error
+      // TypeError: Cannot read property 'instruments' of undefined
+      if(sessions[getIx(data.roomID)] !== undefined){
       sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].push(new TBDnote(data.start,data.end,data));
+
       // console.log(sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid])
       resolveOverlaps(getLastStep(data),data);
       // log event
@@ -283,6 +290,7 @@ io.on('connection', function(socket){
       // clean up
       userThatClicked.splice(offix,1);
       start.splice(offix,1);
+      }
     }
 
     // drag an existing note to new location
@@ -292,14 +300,17 @@ io.on('connection', function(socket){
         selectedStep = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].findIndex(function(el){
           return (el.row === data.row) && (el.on <= data.column) && (el.off >= data.column)
         });
+
+        eliminateDuplicates(data.user,selectedSteps);
+
         if (selectedStep > -1) {
           clickOffset = data.column - sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][selectedStep].on;
         }
 
-        var dubGrabCheck = selectedSteps.some(a=> a.noteIx === selectedStep && a.inst === data.inst && a.grid === data.grid);
-        console.log(dubGrabCheck);
+        // var dubGrabCheck = selectedSteps.some(a=> a.noteIx === selectedStep && a.inst === data.inst && a.grid === data.grid);
+        // console.log(dubGrabCheck);
         // push to array of selected steps
-        if(!dubGrabCheck){
+        // if(!dubGrabCheck){
           selectedSteps.push({
             user: data.user,
             offset:clickOffset,
@@ -308,33 +319,39 @@ io.on('connection', function(socket){
             grid: data.grid,
           });
           data.offset = clickOffset;
-        }
+        // }
     }
 
       // filter for steps initiated by current user (to prevent confusion with simultaneous step dragging)
       var curr = selectedSteps.filter(a => a.user === data.user)[0];
-      if (curr.noteIx > -1) {
-        data.offset = curr.offset;
-        sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][curr.noteIx].move(data);
-        data.noteIx = curr.noteIx;
-      }
 
-      // on release, set note at new location
-      if (data.release) {
-        selectedSteps.splice(selectedSteps.findIndex(a =>a.user === data.user),1)
-        // console.log('User', data.user);
-        // console.log('selectedSteps',selectedSteps);
-        // get reference to moved note and check for overlap case
-        var setNote = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][data.noteIx];
-        var overlappers = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].filter(a => a.row === data.row && a.inRange(setNote.on,setNote.off));
+      if ( typeof curr != 'undefined'){
+        if (curr.noteIx > -1) {
+          data.offset = curr.offset;
+          sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][curr.noteIx].move(data);
+          data.noteIx = curr.noteIx;
+        }
 
-				//remove reference to the note that we're checking against
-				overlappers.splice(overlappers.indexOf(setNote),1);
+        // on release, set note at new location
+        if (data.release) {
+          selectedSteps.splice(selectedSteps.findIndex(a =>a.user === data.user),1)
 
-        // check overlap situation and visually correct
-        var overlapTypes = [];
-				overlappers.forEach(a => overlapTypes.push(overlapType(setNote,a)))
-				correctOverlaps(overlappers,overlapTypes, setNote,data);
+
+          // get reference to moved note and check for overlap case
+          var setNote = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][data.noteIx];
+          if(setNote.on){
+            var overlappers = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].filter(a => a.row === data.row && a.inRange(setNote.on,setNote.off));
+
+    				//remove reference to the note that we're checking against
+    				overlappers.splice(overlappers.indexOf(setNote),1);
+
+            // check overlap situation and visually correct
+            var overlapTypes = [];
+    				overlappers.forEach(a => overlapTypes.push(overlapType(setNote,a)))
+
+    				correctOverlaps(overlappers,overlapTypes, setNote,data);
+          }
+        }
       }
     }
 
@@ -417,6 +434,7 @@ io.on('connection', function(socket){
         data.noteIx = selectedSteps[check[1]].noteIx;
         data.offset = selectedSteps[check[1]].offset;
         data.release = true;
+        // TODO: catch error thrown from below line: index didn't exist
         sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][data.noteIx].move(data);
         var moveStep = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][data.noteIx]
         resolveOverlaps(moveStep,data);
@@ -429,7 +447,16 @@ io.on('connection', function(socket){
         } else {
           data.flipped = data.column < start[check[2]] ? true : false;
         }
-        sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].push(new TBDnote(start[check[2]],data.column,data));
+
+        if(data.flipped){
+          data.end = start[check[2]];
+          data.start = data.column;
+        } else {
+          data.start = start[check[2]];
+          data.end = data.column;
+        }
+
+        sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].push(new TBDnote(data.start,data.end,data));
         resolveOverlaps(getLastStep(data),data)
         userThatClicked.splice(check[2],1);
         start.splice(check[2],1);
@@ -576,14 +603,12 @@ function TBDnote(startpos, endpos, data) {
   this.move = function(data){
     this.row = data.row;
     this.on = data.column-data.offset;
-
+    // find note endpoint
+    this.off = this.on + this.len;
     // prevent dragging out of bounds to the left
     if (this.on<0) {
       this.on = 0;
     }
-
-    // find note endpoint
-    this.off = this.on + this.len;
 
     // prevent dragging out of bounds to the right
     if(this.off > 31){
@@ -829,4 +854,11 @@ function getLastStep(data) {
 	noteIx -= 1;
 	var thisStep = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][noteIx];
 	return thisStep;
+}
+
+function eliminateDuplicates(user,array){
+  var dupeIx = array.findIndex(a => a.user === user);
+  if (dupeIx > -1){
+    array.splice(dupeIx,1);
+  }
 }

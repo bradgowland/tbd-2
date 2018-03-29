@@ -181,6 +181,10 @@ $(document).ready(function(){
 		}
 	});
 
+	socket.on('refresh alert',function(){
+		alert('there was an error! please refresh the page');
+	})
+
 	// get current grid state from server
 	socket.on('joinSession',function(data){
 		// update instruments
@@ -232,6 +236,7 @@ $(document).ready(function(){
 	$(document).on("mouseleave",'.selected .grid',function(){
 
 		if(mouseIsClicked){
+			console.log('Event Ended');
 		socket.emit('end grid events',{
 			roomID: roomID,
 			user: user,
@@ -264,7 +269,7 @@ $(document).ready(function(){
 		move = $(this).hasClass('clicked') && !alted ? true : false;
 		// trim should do nothing if user is not over edge
 		mouseIsClicked = alted && !(trim)? false : true;
-		singles = shifted;
+		singles = shifted && !move;
 
 		row = $(this).parent().index();
 		column = $(this).index();
@@ -364,7 +369,7 @@ $(document).ready(function(){
 		mouseIsClicked = false;
 		column = $(this).index();
 		console
-		if(!shifted && move){
+		if(!singles && move){
 			releaseNote();
 		} else if (trim){
 			setTrim();
@@ -866,7 +871,7 @@ function stepReturn(data){
 	var $stepthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb:eq("+data.column+")");
 
 	// check for interaction mode
- 	// console.log(data.state);
+ 	console.log(data.state);
 	// step interaction
 	switch(data.state) {
 		// clear a note
