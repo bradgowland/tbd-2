@@ -6,8 +6,8 @@ body {
 }
 
 #midi{
-  float: right;
   height: 100%;
+  width:165px;
 }
 
 
@@ -35,10 +35,11 @@ body {
     color: white;
     font-family: "Helvetica";
     font-style: bold;
-    font-size: 325%;
-    text-align: left;
+    font-size: 35px ;
+    float: left;
     letter-spacing: 10px;
     text-shadow: 3px 2px black;
+    line-height: 35px;
 }
 
 
@@ -296,8 +297,8 @@ input {
   overflow: visible;
 }
 
-.gridlabels:hover{
-  text-shadow: 1px 1px blue;
+.rowlabel:hover{
+  text-shadow: 2px 2px blue;
 
 }
 
@@ -518,7 +519,7 @@ input {
 
 .buttonbar{
   width: 10.5%;
-  height: inherit;
+  height: 100%;
   border: none;
   font-size: 18px;
   background-color: grey;
@@ -550,6 +551,7 @@ input {
   padding: 6px;
   color:blue;
   transition:0.2s;
+  width:auto
 }
 
 .tab-link{
@@ -561,6 +563,20 @@ input {
   border: solid 1px white;
   padding: 6px;
   color:blue;
+  width:auto;
+
+}
+
+.locationdots{
+  display:inline-block;
+}
+
+.locationdot{
+  height: 10px;
+  width: 10px;
+  border-radius: 100%;
+  background-color: red;
+  float:left;
 }
 
 .tab-link:hover{
@@ -570,6 +586,7 @@ input {
 
 .deletetab{
   height:10px;
+  padding-left: 5px;
 }
 
 li{
@@ -612,6 +629,7 @@ ul.tabs li.selected{
   text-align: center;
   height:40px;
   margin:10px;
+  vertical-align:center;
 }
 
 .bottombar{
@@ -628,12 +646,18 @@ ul.tabs li.selected{
 
 #tempo:hover{
   text-shadow: 2px 2px red;
+
+}
+
+#tempo{
+  margin-top: 1px;
 }
 
 #clearcurrent:hover{
   color: grey;
   transition: 1s;
 }
+
 
 .modal-header{
   text-shadow: 1px 1px skyblue;
@@ -669,8 +693,9 @@ ul.tabs li.selected{
   height: 30px;
   margin-top: 5px;
   width: 400px;
-  position: relative;
+  position: absolute;
   display: none;
+  z-index: 10;
 }
 
 .notif_text {

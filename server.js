@@ -26,6 +26,7 @@ var selectedStep,clickOffset;
 var selectedSteps = [];
 var userThatClicked = [];
 var trims = [];
+var user_locations = [];
 
 app.use(express.static('public'));
 
@@ -75,6 +76,7 @@ io.on('connection', function(socket){
 
         // remove user and client
         sessions[roomIndex].users.splice(userIndex, 1);
+        sessions[roomIndex].locations.splice(userIndex,1);
         clients.splice(clientIx, 1);
         console.log('Remaining users: ', sessions[roomIndex].users);
 
@@ -208,6 +210,7 @@ io.on('connection', function(socket){
     roomIndex = rooms.indexOf(roomID);
     if(sessions[roomIndex] !== undefined){
       sessions[roomIndex].users.push(user);
+      sessions[roomIndex].locations.push(-1);
       createLog(roomID, new Date(), "user added to room", user);
 
     // send full user list to all users in rooms
@@ -215,6 +218,7 @@ io.on('connection', function(socket){
       type: 'connect',
       user: user,
       users: sessions[roomIndex].users,
+      locations: sessions[roomIndex].locations,
       user_colors: sessions[roomIndex].user_colors,
     });
     // console check
@@ -339,7 +343,8 @@ io.on('connection', function(socket){
 
           // get reference to moved note and check for overlap case
           var setNote = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid][data.noteIx];
-          if(setNote.on){
+
+          if(typeof setNote != 'undefined'){
             var overlappers = sessions[getIx(data.roomID)].instruments[data.inst].steps[data.grid].filter(a => a.row === data.row && a.inRange(setNote.on,setNote.off));
 
     				//remove reference to the note that we're checking against
@@ -508,6 +513,13 @@ io.on('connection', function(socket){
     sessions[getIx(data.roomID)].tempo = data.tempo;
     io.to(data.roomID).emit('temporeturn', data);
     createLog(data.roomID, new Date(), "tempo changed", data.user);
+  })
+
+  socket.on('location',function(data){
+  var userIx  = sessions[getIx(data.roomID)].users.indexOf(data.user);
+  sessions[getIx(data.roomID)].locations[userIx] = data.inst;
+    console.log(data.inst);
+    io.to(data.roomID).emit('location return', data);
   })
 
   // horizontal reverse to all users
@@ -693,6 +705,7 @@ function correctOverlaps(overlaps, overlapCase, moved, data) {
 function session(roomID, socket){
   this.roomID = roomID;
   this.users = [];
+  this.locations = [];
 this.user_colors = ['chartreuse', 'orchid', 'yellow', 'orange', 'green', 'plum', 'aqua',
         'pink', 'royalblue', 'lightgreen', 'coral', 'yellowgreen', 'bisque', 'aquamarine',
         'teal', 'moccasin', 'burlywood'];

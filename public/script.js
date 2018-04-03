@@ -23,6 +23,7 @@ var instruments = [];
 var row, column, ix;
 var sender = true;
 
+
 // Click Callbacks
 var reversing = false;
 var clear;
@@ -61,11 +62,7 @@ var noteIx;
 // Notification timeout queue
 var timeout_queue = [];
 
-// Setup for the p5 loop
-function setup(){
-	frameRate(8);
-	noLoop();
-}
+
 //Start by hidine the container to fade in
 $('.container').hide();
 
@@ -109,6 +106,7 @@ WebMidi.enable(function(err){
 // page interaction
 $(document).ready(function(){
 	// check for room joined by url
+	var locationDot = $('<div class="locationdot"></div>');
 	var url = window.location.href;
 
 	// case for local vs website
@@ -160,7 +158,7 @@ $(document).ready(function(){
 		sender = false;
 		users = data.users;
 		user_colors = data.user_colors;
-
+		sendLocation();
 		// update visual user list
 		$('#userList').html('<div class="ital_text">Users</div>');
 		for (var i = 0; i < users.length; i++) {
@@ -204,18 +202,22 @@ $(document).ready(function(){
 			}
 		}
 		$('#tempo').val(data.tempo);
-		// frameRate(data.tempo/15);
+		tempo = data.tempo;
+
 
 		// get current list of Users
 		users = data.users;
 
+
+
 		// show session
 		showTab(instruments.length);
+
 		currentGridIndex = instruments.length-1;
 		lastIx = currentGridIndex;
 
 		// TODO: set conditions so that it actually reads out when the val is not initialized
-		if(!instruments[currentGridIndex].out === null) {
+		if(typeof instruments[currentGridIndex].out !== undefined) {
 			$('#output').val('Channel '+instruments[currentGridIndex].out);
 		}
 		// else {
@@ -437,12 +439,12 @@ $(document).ready(function(){
 			$('.thumbs .grid').removeClass('selected');
 			$('.thumbs:eq('+currentGridIndex+') .grid:eq('+currentThumb+')').addClass('selected');
 		}
-
+		sendLocation();
 		// This sets the output so the users knows that output on their current tab...
-		if(instruments[currentGridIndex] && currentGridIndex>-1) {
+		if(currentGridIndex > -1 && (typeof instruments[currentGridIndex].out !== 'undefined')) {
 			$('#output').val('Channel '+instruments[currentGridIndex].out);
 		} else {
-			$('#output').val('Pick yr MIDI out!');
+			$('#output').val('Channel');
 		}
 
 	});
@@ -474,7 +476,11 @@ $(document).ready(function(){
 			if(instruments[currentGridIndex].steps[currentThumb].length){
 				sendDelete();
 			}
-		} else if (e.altKey){
+		} else if(e.shiftKey && e.keyCode === 38) {
+			console.log('Up');
+		}else if(e.shiftKey && e.keyCode === 40){
+			console.log('Down');
+		}else if (e.altKey){
 			$('.step.clicked.left').addClass('alted');
 			$('.step.clicked.right').addClass('alted');
 		}
@@ -494,6 +500,15 @@ $(document).ready(function(){
 			instruments[data.inst].steps[data.grid][noteIx].select();
 		}
 	});
+
+	socket.on('location return', function(data){
+		$(".locationdot").remove("."+data.user+"")
+		var $dot = locationDot.clone();
+		$dot.addClass(data.user);
+		var currentColor = user_colors[users.indexOf(data.user)];
+		$dot.css('background-color', currentColor);
+		$('.locationdots:eq('+data.inst+')').append($dot);
+	})
 
 	// Presets dropdown: [drums,major,minor,blues,fullGrid,chords]
 	$("#presets").change(function(){
@@ -604,6 +619,7 @@ $(document).ready(function(){
 			currentThumb = instruments[currentGridIndex].thumb;
 			userThatClicked = false;
 		}
+		sendLocation();
 
 		// notify
 		notification(data.user, user, "new_inst");
@@ -659,7 +675,7 @@ $(document).ready(function(){
 				}
 				$('.step').removeClass('current');
 			}
-			$(this).text('Start');
+			$(this).text('Play');
 			noLoop();
 			stopcounter = true;
 		}
@@ -805,6 +821,12 @@ $(document).ready(function(){
 	});
 });
 
+// Setup for the p5 loop
+function setup(){
+	frameRate(tempo/15);
+	noLoop();
+}
+
 // draw loop for p5 clock
 function draw() {
 	if (started) {
@@ -862,6 +884,18 @@ function showTab(index){
 	$('.tab-content').removeClass('selected');
 	$('ul.tabs li a:eq('+index+')').addClass('selected');
 	$('.tab-content:eq('+index+')').addClass('selected');
+
+}
+
+function sendLocation(){
+	if(currentGridIndex > -1){
+		socket.emit('location',{
+				inst: currentGridIndex,
+				roomID: roomID,
+				user: user,
+		});
+	}
+
 }
 
 function stepReturn(data){
@@ -920,6 +954,7 @@ function stepReturn(data){
 				instruments[data.inst].removeNotes(movingStep);
 				instruments[data.inst].steps[data.grid][data.noteIx].clearBorder();
 			}
+			console.log(data);
 			instruments[data.inst].steps[data.grid][data.noteIx].move(data);
 
 			// refresh jQuery to reflect instrument state on server

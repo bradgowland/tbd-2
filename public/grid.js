@@ -122,7 +122,7 @@ function TBDgrid(name, rows, cols,type, root, outChan){
 	}
 
 	// Creates the Instrument Tag Link
-	var newTab = '<li><a class="tab-link" data-tab="' + name + '">' + name +
+	var newTab = '<li><a class="tab-link" data-tab="' + name + '"><div class="locationdots"></div>' + name +
 		'<input type="image" class="deletetab" src="images/littlex.png"></input></a></li>';
 	$('.tabs').append(newTab);
 
@@ -140,6 +140,7 @@ function TBDgrid(name, rows, cols,type, root, outChan){
 	} else {
 		h = 100 / this.rows;
 	}
+
 
 
 	// Creating the column of labels
@@ -179,9 +180,11 @@ function TBDgrid(name, rows, cols,type, root, outChan){
 	gr.find(".row").css({
 		"height": h+"%"
 	});
+	this.h = h;
 	gr.find(".step").css({
 		"width": w+"%"
 	});
+	this.w = w;
 
 	// create and style time division by quarter notes
 	for(var i = 0; i < columns; i++){
@@ -190,6 +193,8 @@ function TBDgrid(name, rows, cols,type, root, outChan){
 			$('.step:eq('+i+')', '.row').addClass('quarter');
 		}
 	}
+
+	
 
 	// create hidden thumbs to quickly toggle by show/hide
 	for(var i = 0 ; i < 3; i++){
