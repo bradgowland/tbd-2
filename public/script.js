@@ -83,7 +83,7 @@ WebMidi.enable(function(err){
 	}
 	if(iacIndex > -1){
 		midiOut = WebMidi.outputs[iacIndex];
-	console.log(iacIndex);
+	// console.log(iacIndex);
 		if(WebMidi.outputs[iacIndex].name){
 			$('#midi').val(WebMidi.outputs[iacIndex].name);
 		}
@@ -99,7 +99,7 @@ WebMidi.enable(function(err){
 			midiOut = WebMidi.outputs[selectedOutput];
 		}
 		// set output for whole thing
-		console.log(midiOut);
+		// console.log(midiOut);
 	})
 })
 
@@ -128,7 +128,7 @@ $(document).ready(function(){
 		// catch all for local network IPs -- take out after testing
 		var temp = url.split("").reverse();
 		roomID = temp.slice(0,temp.indexOf("/")).reverse().join("");
-		console.log(roomID);
+		// console.log(roomID);
 
 		// send roomID to server for connection
 		socket.emit('room', {roomID: roomID});
@@ -238,7 +238,7 @@ $(document).ready(function(){
 	$(document).on("mouseleave",'.selected .grid',function(){
 
 		if(mouseIsClicked){
-			console.log('Event Ended');
+			// console.log('Event Ended');
 		socket.emit('end grid events',{
 			roomID: roomID,
 			user: user,
@@ -370,7 +370,7 @@ $(document).ready(function(){
 		if(mouseIsClicked){
 		mouseIsClicked = false;
 		column = $(this).index();
-		console
+		// console
 		if(!singles && move){
 			releaseNote();
 		} else if (trim){
@@ -477,9 +477,9 @@ $(document).ready(function(){
 				sendDelete();
 			}
 		} else if(e.shiftKey && e.keyCode === 38) {
-			console.log('Up');
+			// console.log('Up');
 		}else if(e.shiftKey && e.keyCode === 40){
-			console.log('Down');
+			// console.log('Down');
 		}else if (e.altKey){
 			$('.step.clicked.left').addClass('alted');
 			$('.step.clicked.right').addClass('alted');
@@ -638,7 +638,7 @@ $(document).ready(function(){
 
 	// update grid on clear
 	socket.on('clearcurrentreturn', function(data){
-		console.log(data);
+		// console.log(data);
 		instruments[data.inst].clear(data.grid);
 	});
 
@@ -905,7 +905,7 @@ function stepReturn(data){
 	var $stepthumb = $(".thumbs:eq("+data.inst+") .grid.little:eq("+data.grid+") .row:eq("+data.row+") .stepthumb:eq("+data.column+")");
 
 	// check for interaction mode
- 	console.log(data.state);
+ 	// console.log(data.state);
 	// step interaction
 	switch(data.state) {
 		// clear a note
@@ -954,7 +954,7 @@ function stepReturn(data){
 				instruments[data.inst].removeNotes(movingStep);
 				instruments[data.inst].steps[data.grid][data.noteIx].clearBorder();
 			}
-			console.log(data);
+			// console.log(data);
 			instruments[data.inst].steps[data.grid][data.noteIx].move(data);
 
 			// refresh jQuery to reflect instrument state on server
