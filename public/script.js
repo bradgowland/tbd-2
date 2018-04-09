@@ -856,6 +856,7 @@ function draw() {
 	} else {
 		// error case if MIDI output is not configured
 		midiOut ? midiOut.stopNote('all'): console.error("You haven't set the MIDI out!");
+		frameRate(tempo/15);
 		$('.step').removeClass('current');
 	}
 }
